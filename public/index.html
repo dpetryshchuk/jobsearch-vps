@@ -478,6 +478,40 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    /* ── TOOL CALLS ── */
+    .tool-calls { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+
+    .tool-call { border: 1px solid var(--border); border-radius: 2px; overflow: hidden; font-size: 11px; }
+
+    .tool-call-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 10px; cursor: pointer;
+      background: var(--surface-2); user-select: none;
+    }
+    .tool-call-header:hover { background: var(--border); }
+
+    .tool-call-toggle { font-size: 9px; color: var(--text-dim); transition: transform 0.15s; display: inline-block; }
+    .tool-call-toggle.open { transform: rotate(90deg); }
+
+    .tool-call-chip {
+      font-size: 9px; font-weight: 500; letter-spacing: 0.08em;
+      padding: 1px 6px; border-radius: 2px;
+      background: rgba(138, 96, 0, 0.12); color: var(--amber);
+    }
+
+    .tool-call-body { padding: 8px 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+
+    .tool-section-label {
+      font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 3px;
+    }
+
+    .tool-json {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 2px;
+      padding: 6px 8px; font-family: var(--font); font-size: 10px; color: var(--text-mid);
+      overflow-x: auto; white-space: pre; margin: 0; max-height: 140px; overflow-y: auto;
+    }
+
     /* ── SCHEMA ── */
     .schema-table {
       background: var(--surface);
@@ -831,23 +865,103 @@
 
   document.getElementById('send-btn').addEventListener('click', send);
 
-  function send() {
+  const AGENT_URL = 'http://localhost:4111/api/agents/jobsearch/generate';
+
+  async function send() {
     const text = input.value.trim();
     if (!text) return;
     addMessage('user', text);
     input.value = '';
     input.style.height = 'auto';
-    // Input mode → Mastra agent · RAG mode → vector search
-    setTimeout(() => addMessage('agent', mode === 'rag' ? 'Searching knowledge base...' : 'Processing...'), 300);
+
+    if (mode === 'rag') { addMessage('agent', 'RAG not yet wired.'); return; }
+
+    const bubble = addMessage('agent', '...');
+
+    try {
+      const res = await fetch(AGENT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: text }] }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderAgentResponse(bubble, data);
+    } catch (err) {
+      const body = bubble.querySelector('.message-body');
+      body.textContent = `Error: ${err.message}`;
+      body.style.color = 'var(--red)';
+    }
+  }
+
+  function renderAgentResponse(bubble, data) {
+    const body = bubble.querySelector('.message-body');
+    body.innerHTML = '';
+
+    // Tool calls from steps
+    const steps = data.steps ?? [];
+    const toolCallsDiv = document.createElement('div');
+    toolCallsDiv.className = 'tool-calls';
+
+    steps.forEach(step => {
+      (step.toolCalls ?? []).forEach(tc => {
+        const result = (step.toolResults ?? []).find(r => r.toolCallId === tc.toolCallId);
+        toolCallsDiv.appendChild(buildToolCallCard(tc, result));
+      });
+    });
+
+    if (toolCallsDiv.children.length > 0) body.appendChild(toolCallsDiv);
+
+    // Final text
+    const textNode = document.createElement('span');
+    textNode.textContent = data.text ?? '';
+    body.appendChild(textNode);
+  }
+
+  function buildToolCallCard(tc, result) {
+    const card = document.createElement('div');
+    card.className = 'tool-call';
+
+    const header = document.createElement('div');
+    header.className = 'tool-call-header';
+    header.innerHTML = `<span class="tool-call-toggle">▶</span><span class="tool-call-chip">${escHtml(tc.toolName)}</span>`;
+
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'tool-call-body';
+    bodyEl.hidden = true;
+    bodyEl.innerHTML = `
+      <div>
+        <div class="tool-section-label">Args</div>
+        <pre class="tool-json">${escHtml(JSON.stringify(tc.args, null, 2))}</pre>
+      </div>
+      <div>
+        <div class="tool-section-label">Result</div>
+        <pre class="tool-json">${escHtml(JSON.stringify(result?.result ?? null, null, 2))}</pre>
+      </div>`;
+
+    header.addEventListener('click', () => {
+      const open = !bodyEl.hidden;
+      bodyEl.hidden = open;
+      header.querySelector('.tool-call-toggle').classList.toggle('open', !open);
+    });
+
+    card.appendChild(header);
+    card.appendChild(bodyEl);
+    return card;
   }
 
   function addMessage(role, text) {
     const messages = document.getElementById('messages');
     const div = document.createElement('div');
     div.className = 'message' + (role === 'user' ? ' user' : '');
-    div.innerHTML = `<div class="message-tag">${role === 'user' ? 'you' : 'os'}</div><div class="message-body">${text}</div>`;
+    div.innerHTML = `<div class="message-tag">${role === 'user' ? 'you' : 'os'}</div><div class="message-body">${escHtml(text)}</div>`;
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
+    return div;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 </script>
 </body>

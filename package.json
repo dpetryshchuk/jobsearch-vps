@@ -22,6 +22,11 @@
   "type": "commonjs",
   "dependencies": {
     "@mastra/core": "^1.32.1",
+    "@mastra/langfuse": "^1.2.5",
+    "@mastra/memory": "^1.17.5",
+    "@mastra/pg": "^1.10.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.217.0",
+    "@opentelemetry/sdk-node": "^0.217.0",
     "@types/express": "^5.0.6",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.1",
