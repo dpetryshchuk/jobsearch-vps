@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Search</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; background: #f5f5f5; color: #1a1a1a; }
+
+  header { padding: 14px 20px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 24px; }
+  header h1 { font-size: 15px; font-weight: 600; color: #111; }
+  .stats { display: flex; gap: 16px; margin-left: auto; }
+  .stat { font-size: 12px; color: #999; }
+  .stat span { color: #1a1a1a; font-weight: 600; }
+
+  nav { display: flex; gap: 2px; padding: 10px 20px 0; background: #fff; border-bottom: 1px solid #e0e0e0; }
+  nav button { padding: 7px 16px; background: none; border: none; color: #999; cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav button.active { color: #111; border-bottom-color: #2563eb; }
+
+  .toolbar { padding: 10px 20px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #e8e8e8; background: #fff; }
+  input[type=search], input[type=text], input[type=date], select.filter, textarea {
+    background: #f5f5f5; border: 1px solid #d0d0d0; color: #1a1a1a; padding: 5px 10px; border-radius: 4px; font-size: 12px;
+  }
+  input[type=search] { width: 220px; }
+  input[type=search]:focus, input[type=text]:focus, input[type=date]:focus, select.filter:focus, textarea:focus {
+    outline: none; border-color: #2563eb; background: #fff;
+  }
+  .count { margin-left: auto; color: #aaa; font-size: 12px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px 12px; color: #aaa; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; background: #f5f5f5; cursor: pointer; user-select: none; white-space: nowrap; }
+  th:hover { color: #666; }
+  td { padding: 7px 12px; border-bottom: 1px solid #efefef; vertical-align: top; }
+  tr:hover td { background: #fafafa; }
+
+  .scroll { overflow-y: auto; height: calc(100vh - 145px); }
+
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  select.inline { background: #fff; border: 1px solid #d0d0d0; color: #1a1a1a; padding: 2px 6px; border-radius: 3px; font-size: 12px; cursor: pointer; }
+  select.inline:focus { outline: none; border-color: #2563eb; }
+
+  .desc-toggle { color: #bbb; cursor: pointer; font-size: 11px; white-space: nowrap; }
+  .desc-toggle:hover { color: #666; }
+  .desc-row td { padding: 4px 12px 10px; background: #fafafa; color: #666; font-size: 12px; line-height: 1.5; }
+  .desc-row td pre { white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+
+  .btn-del { background: none; border: none; color: #ddd; cursor: pointer; font-size: 14px; padding: 0 4px; }
+  .btn-del:hover { color: #ef4444; }
+  .btn-sm { padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; border: 1px solid #d0d0d0; background: #fff; color: #333; }
+  .btn-sm:hover { background: #f0f0f0; }
+  .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .btn-primary:hover { background: #1d4ed8; }
+
+  .empty { text-align: center; padding: 60px; color: #ccc; }
+  .source-tag { font-size: 11px; color: #aaa; }
+  .event-tag { font-size: 11px; color: #7c3aed; background: #ede9fe; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+
+  /* Event cards */
+  .events-grid { display: flex; flex-direction: column; gap: 0; }
+  .event-card { background: #fff; border-bottom: 1px solid #efefef; padding: 14px 20px; display: flex; gap: 16px; align-items: flex-start; cursor: pointer; }
+  .event-card:hover { background: #fafafa; }
+  .event-card.selected { background: #f0f4ff; border-left: 3px solid #2563eb; }
+  .event-meta { flex: 1; }
+  .event-name { font-weight: 600; font-size: 14px; color: #111; }
+  .event-date { font-size: 12px; color: #999; margin-top: 2px; }
+  .event-notes { font-size: 12px; color: #666; margin-top: 4px; }
+  .event-count { font-size: 12px; color: #2563eb; white-space: nowrap; padding-top: 2px; }
+
+  /* Add event form */
+  .add-form { padding: 14px 20px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .add-form label { font-size: 11px; color: #999; display: flex; flex-direction: column; gap: 3px; }
+  .add-form input, .add-form textarea { font-family: inherit; }
+  .add-form textarea { resize: none; height: 32px; width: 260px; }
+
+  /* Event detail panel */
+  .event-detail { padding: 0; }
+  .event-detail-header { padding: 14px 20px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; gap: 10px; align-items: center; }
+  .event-detail-header h3 { font-size: 14px; font-weight: 600; flex: 1; }
+
+  .split { display: flex; height: calc(100vh - 145px); }
+  .split-left { width: 360px; min-width: 280px; border-right: 1px solid #e0e0e0; overflow-y: auto; flex-shrink: 0; }
+  .split-right { flex: 1; overflow-y: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Job Search</h1>
+  <div class="stats" id="stats"></div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('jobs')">Job Postings</button>
+  <button onclick="showTab('contacts')">Contacts</button>
+  <button onclick="showTab('events')">Events</button>
+</nav>
+
+<!-- Jobs -->
+<div id="tab-jobs">
+  <div class="toolbar">
+    <input type="search" id="job-search" placeholder="Search company, title…" oninput="renderJobs()">
+    <select class="filter" id="job-status" onchange="renderJobs()">
+      <option value="">All statuses</option>
+      <option value="new">New</option>
+      <option value="applied">Applied</option>
+      <option value="dropped">Dropped</option>
+    </select>
+    <select class="filter" id="job-source" onchange="renderJobs()">
+      <option value="">All sources</option>
+    </select>
+    <span class="count" id="job-count"></span>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th onclick="sortJobs('scraped_date')">Date</th>
+        <th onclick="sortJobs('company')">Company</th>
+        <th onclick="sortJobs('title')">Title</th>
+        <th onclick="sortJobs('source')">Source</th>
+        <th onclick="sortJobs('status')">Status</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="jobs-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Contacts -->
+<div id="tab-contacts" style="display:none">
+  <div class="toolbar">
+    <input type="search" id="contact-search" placeholder="Search name, company…" oninput="renderContacts()">
+    <select class="filter" id="contact-stage" onchange="renderContacts()">
+      <option value="">All stages</option>
+      <option value="Outreached">Outreached</option>
+      <option value="Responded">Responded</option>
+      <option value="Ongoing">Ongoing</option>
+      <option value="Dead">Dead</option>
+    </select>
+    <select class="filter" id="contact-event" onchange="renderContacts()">
+      <option value="">All events</option>
+    </select>
+    <span class="count" id="contact-count"></span>
+  </div>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th onclick="sortContacts('name')">Name</th>
+        <th onclick="sortContacts('company')">Company</th>
+        <th onclick="sortContacts('role')">Role</th>
+        <th onclick="sortContacts('source')">Source</th>
+        <th onclick="sortContacts('event_name')">Event</th>
+        <th onclick="sortContacts('stage')">Stage</th>
+        <th onclick="sortContacts('last_contact')">Last Contact</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="contacts-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Events -->
+<div id="tab-events" style="display:none">
+  <div class="add-form">
+    <label>Event name<input type="text" id="ev-name" placeholder="e.g. SD Tech Meetup" style="width:200px"></label>
+    <label>Date<input type="date" id="ev-date"></label>
+    <label>Notes<textarea id="ev-notes" placeholder="Optional"></textarea></label>
+    <button class="btn-sm btn-primary" onclick="addEvent()">Add Event</button>
+  </div>
+  <div class="split">
+    <div class="split-left" id="events-list"></div>
+    <div class="split-right" id="event-detail">
+      <div class="empty">Select an event to see connections</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let jobs = [], contacts = [], events = [];
+let jobSort = { key: 'scraped_date', dir: -1 };
+let contactSort = { key: 'last_contact', dir: -1 };
+let expandedJobs = new Set();
+let selectedEventId = null;
+
+async function load() {
+  [jobs, contacts, events] = await Promise.all([
+    fetch('/api/jobs').then(r => r.json()),
+    fetch('/api/contacts').then(r => r.json()),
+    fetch('/api/events').then(r => r.json()),
+  ]);
+  populateSources();
+  populateEventFilter();
+  renderJobs();
+  renderContacts();
+  renderEvents();
+  loadStats();
+}
+
+async function loadStats() {
+  const s = await fetch('/api/stats').then(r => r.json());
+  const jMap = Object.fromEntries(s.jobs.map(r => [r.status, r.n]));
+  const cMap = Object.fromEntries(s.contacts.map(r => [r.stage, r.n]));
+  document.getElementById('stats').innerHTML = `
+    <div class="stat">New <span>${jMap.new||0}</span></div>
+    <div class="stat">Applied <span>${jMap.applied||0}</span></div>
+    <div class="stat" style="margin-left:12px">Ongoing <span>${cMap.Ongoing||0}</span></div>
+    <div class="stat">Responded <span>${cMap.Responded||0}</span></div>
+    <div class="stat">Dead <span>${cMap.Dead||0}</span></div>
+    <div class="stat" style="margin-left:12px">Events <span>${events.length}</span></div>
+  `;
+}
+
+function populateSources() {
+  const sources = [...new Set(jobs.map(j => j.source).filter(Boolean))].sort();
+  const sel = document.getElementById('job-source');
+  sel.innerHTML = '<option value="">All sources</option>';
+  sources.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+}
+
+function populateEventFilter() {
+  const sel = document.getElementById('contact-event');
+  sel.innerHTML = '<option value="">All events</option>';
+  events.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.name; sel.appendChild(o); });
+}
+
+function showTab(tab) {
+  ['jobs','contacts','events'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('nav button').forEach((b, i) => {
+    b.classList.toggle('active', ['jobs','contacts','events'][i] === tab);
+  });
+}
+
+// ── Jobs ──────────────────────────────────────────────────────────────────────
+
+function sortJobs(key) { jobSort = { key, dir: jobSort.key === key ? -jobSort.dir : -1 }; renderJobs(); }
+
+function renderJobs() {
+  const status = document.getElementById('job-status').value;
+  const source = document.getElementById('job-source').value;
+  const q = document.getElementById('job-search').value.toLowerCase();
+  let rows = jobs.filter(r => {
+    if (q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
+    if (status && r.status !== status) return false;
+    if (source && r.source !== source) return false;
+    return true;
+  }).sort((a, b) => {
+    const av = a[jobSort.key] ?? '', bv = b[jobSort.key] ?? '';
+    return jobSort.dir * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
+  document.getElementById('job-count').textContent = `${rows.length} jobs`;
+
+  const tbody = document.getElementById('jobs-body');
+  tbody.innerHTML = '';
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No jobs found</td></tr>'; return; }
+  rows.forEach(j => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="white-space:nowrap;color:#999;font-size:11px">${j.scraped_date||''}</td>
+      <td><strong>${esc(j.company)}</strong></td>
+      <td>${j.link ? `<a href="${esc(j.link)}" target="_blank">${esc(j.title)}</a>` : esc(j.title)}
+        ${j.description ? `<br><span class="desc-toggle" onclick="toggleDesc('${j.id}')">▸ desc</span>` : ''}</td>
+      <td class="source-tag">${esc(j.source||'')}</td>
+      <td><select class="inline" onchange="updateJob('${j.id}', this.value)">
+        ${['new','applied','dropped'].map(s => `<option${s===j.status?' selected':''}>${s}</option>`).join('')}
+      </select></td>
+      <td><button class="btn-del" onclick="deleteJob('${j.id}')">×</button></td>
+    `;
+    tbody.appendChild(tr);
+    if (expandedJobs.has(j.id)) {
+      const dr = document.createElement('tr');
+      dr.className = 'desc-row';
+      dr.innerHTML = `<td colspan="6"><pre>${esc(j.description||'')}</pre></td>`;
+      tbody.appendChild(dr);
+    }
+  });
+}
+
+function toggleDesc(id) { expandedJobs.has(id) ? expandedJobs.delete(id) : expandedJobs.add(id); renderJobs(); }
+
+async function updateJob(id, status) {
+  await fetch(`/api/jobs/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status }) });
+  const j = jobs.find(x => x.id === id); if (j) j.status = status;
+  loadStats();
+}
+
+async function deleteJob(id) {
+  if (!confirm('Delete this posting?')) return;
+  await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
+  jobs = jobs.filter(x => x.id !== id); renderJobs(); loadStats();
+}
+
+// ── Contacts ──────────────────────────────────────────────────────────────────
+
+function sortContacts(key) { contactSort = { key, dir: contactSort.key === key ? -contactSort.dir : -1 }; renderContacts(); }
+
+function renderContacts() {
+  const stage = document.getElementById('contact-stage').value;
+  const eventId = document.getElementById('contact-event').value;
+  const q = document.getElementById('contact-search').value.toLowerCase();
+  let rows = contacts.filter(r => {
+    if (q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
+    if (stage && r.stage !== stage) return false;
+    if (eventId && r.event_id !== eventId) return false;
+    return true;
+  }).sort((a, b) => {
+    const av = a[contactSort.key] ?? '', bv = b[contactSort.key] ?? '';
+    return contactSort.dir * (av < bv ? -1 : av > bv ? 1 : 0);
+  });
+  document.getElementById('contact-count').textContent = `${rows.length} contacts`;
+
+  const tbody = document.getElementById('contacts-body');
+  tbody.innerHTML = '';
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No contacts found</td></tr>'; return; }
+  rows.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${esc(c.name||'')}</strong></td>
+      <td>${esc(c.company||'')}</td>
+      <td style="color:#777">${esc(c.role||'')}</td>
+      <td class="source-tag">${esc(c.source||'')}</td>
+      <td>${c.event_name ? `<span class="event-tag">${esc(c.event_name)}</span>` : ''}</td>
+      <td><select class="inline" onchange="updateContact('${c.id}', this.value)">
+        ${['Outreached','Responded','Ongoing','Dead'].map(s => `<option${s===c.stage?' selected':''}>${s}</option>`).join('')}
+      </select></td>
+      <td style="color:#999;white-space:nowrap;font-size:11px">${c.last_contact||'—'}</td>
+      <td><button class="btn-del" onclick="deleteContact('${c.id}')">×</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function updateContact(id, stage) {
+  await fetch(`/api/contacts/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ stage }) });
+  const c = contacts.find(x => x.id === id); if (c) c.stage = stage;
+  loadStats();
+}
+
+async function deleteContact(id) {
+  if (!confirm('Delete this contact?')) return;
+  await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
+  contacts = contacts.filter(x => x.id !== id); renderContacts(); loadStats();
+}
+
+// ── Events ────────────────────────────────────────────────────────────────────
+
+function renderEvents() {
+  const list = document.getElementById('events-list');
+  if (!events.length) {
+    list.innerHTML = '<div class="empty">No events yet — add one above</div>';
+    return;
+  }
+  list.innerHTML = events.map(e => `
+    <div class="event-card${selectedEventId === e.id ? ' selected' : ''}" onclick="selectEvent('${e.id}')">
+      <div class="event-meta">
+        <div class="event-name">${esc(e.name)}</div>
+        <div class="event-date">${e.date || 'No date'}</div>
+        ${e.notes ? `<div class="event-notes">${esc(e.notes)}</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div class="event-count">${e.contact_count} connection${e.contact_count !== 1 ? 's' : ''}</div>
+        <button class="btn-del" onclick="deleteEvent(event, '${e.id}')">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function selectEvent(id) {
+  selectedEventId = id;
+  renderEvents();
+  const ev = events.find(e => e.id === id);
+  const contactsAtEvent = await fetch(`/api/events/${id}/contacts`).then(r => r.json());
+
+  const detail = document.getElementById('event-detail');
+  detail.innerHTML = `
+    <div class="event-detail-header">
+      <h3>${esc(ev.name)}</h3>
+      <span style="color:#999;font-size:12px">${ev.date || ''}</span>
+    </div>
+    ${contactsAtEvent.length ? `
+    <table>
+      <thead><tr>
+        <th>Name</th><th>Company</th><th>Role</th><th>Stage</th><th>Last Contact</th>
+      </tr></thead>
+      <tbody>
+        ${contactsAtEvent.map(c => `<tr>
+          <td><strong>${esc(c.name)}</strong></td>
+          <td>${esc(c.company||'')}</td>
+          <td style="color:#777">${esc(c.role||'')}</td>
+          <td><span style="font-size:11px;color:#555">${esc(c.stage)}</span></td>
+          <td style="color:#999;font-size:11px">${c.last_contact||'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>` : '<div class="empty">No connections logged for this event yet</div>'}
+  `;
+}
+
+async function addEvent() {
+  const name = document.getElementById('ev-name').value.trim();
+  if (!name) { alert('Event name is required'); return; }
+  const date = document.getElementById('ev-date').value;
+  const notes = document.getElementById('ev-notes').value.trim();
+  const ev = await fetch('/api/events', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ name, date: date||null, notes: notes||null }),
+  }).then(r => r.json());
+  events.unshift(ev);
+  document.getElementById('ev-name').value = '';
+  document.getElementById('ev-date').value = '';
+  document.getElementById('ev-notes').value = '';
+  populateEventFilter();
+  renderEvents();
+  loadStats();
+}
+
+async function deleteEvent(e, id) {
+  e.stopPropagation();
+  if (!confirm('Delete this event?')) return;
+  await fetch(`/api/events/${id}`, { method: 'DELETE' });
+  events = events.filter(x => x.id !== id);
+  if (selectedEventId === id) {
+    selectedEventId = null;
+    document.getElementById('event-detail').innerHTML = '<div class="empty">Select an event to see connections</div>';
+  }
+  populateEventFilter();
+  renderEvents();
+  loadStats();
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+load();
+</script>
+</body>
+</html>

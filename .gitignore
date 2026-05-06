@@ -1,0 +1,15 @@
+.env
+.mcp.json
+node_modules/
+.DS_Store
+
+# Database — never commit data
+db/*.sqlite
+db/*.sqlite-shm
+db/*.sqlite-wal
+db/backups/
+
+# Personal data
+knowledge/
+STRATEGY.md
+morning-outputs/
