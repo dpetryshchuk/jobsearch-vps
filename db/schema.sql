@@ -3,15 +3,16 @@
 CREATE TABLE IF NOT EXISTS companies (
   id      TEXT PRIMARY KEY,
   name    TEXT NOT NULL,
-  website TEXT,
-  UNIQUE (lower(name))
+  website TEXT
 );
 
-CREATE TABLE IF NOT EXISTS event (
-  id      TEXT PRIMARY KEY,
-  name    TEXT NOT NULL,
-  date    DATE,
-  notes   TEST
+CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_name ON companies (lower(name));
+
+CREATE TABLE IF NOT EXISTS events (
+  id    TEXT PRIMARY KEY,
+  name  TEXT NOT NULL,
+  date  DATE,
+  notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS content_posts (
@@ -33,9 +34,10 @@ CREATE TABLE IF NOT EXISTS contacts (
   outreach_date   DATE,
   notes           TEXT,
   event_id        TEXT REFERENCES events(id),
-  content_post_id TEXT REFERENCES content_posts(id),
-  UNIQUE (lower(name), company_id)
+  content_post_id TEXT REFERENCES content_posts(id)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contacts_name ON contacts (lower(name), company_id);
 
 CREATE TABLE IF NOT EXISTS job_postings (
   id           TEXT PRIMARY KEY,
@@ -63,4 +65,4 @@ CREATE INDEX IF NOT EXISTS idx_job_postings_company ON job_postings(company_id);
 CREATE INDEX IF NOT EXISTS idx_job_postings_status  ON job_postings(status);
 CREATE INDEX IF NOT EXISTS idx_interactions_contact ON interactions(contact_id);
 CREATE INDEX IF NOT EXISTS idx_interactions_date    ON interactions(date);
-CREATE INDEX IF NOT EXISTS idx_content_posts_date ON content_posts(posted_date);
+CREATE INDEX IF NOT EXISTS idx_content_posts_date   ON content_posts(posted_date);
