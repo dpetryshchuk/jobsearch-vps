@@ -9,6 +9,10 @@ db/*.sqlite-shm
 db/*.sqlite-wal
 db/backups/
 
+# Mastra build cache
+.mastra/output/
+.mastra/.build/
+
 # Personal data
 knowledge/
 STRATEGY.md

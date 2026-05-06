@@ -1,441 +1,854 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Job Search</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; background: #f5f5f5; color: #1a1a1a; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JOBSEARCH OS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F7F6F2;
+      --surface: #EEECEA;
+      --surface-2: #E5E3DF;
+      --border: #D8D6D0;
+      --border-2: #C8C6C0;
+      --text: #1C1C18;
+      --text-dim: #8A8A82;
+      --text-mid: #5A5A54;
+      --accent: #3D7A00;
+      --accent-dim: rgba(61, 122, 0, 0.08);
+      --accent-mid: rgba(61, 122, 0, 0.15);
+      --red: #CC2222;
+      --amber: #8A6000;
+      --font: 'Martian Mono', monospace;
+    }
 
-  header { padding: 14px 20px; background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 24px; }
-  header h1 { font-size: 15px; font-weight: 600; color: #111; }
-  .stats { display: flex; gap: 16px; margin-left: auto; }
-  .stat { font-size: 12px; color: #999; }
-  .stat span { color: #1a1a1a; font-weight: 600; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  nav { display: flex; gap: 2px; padding: 10px 20px 0; background: #fff; border-bottom: 1px solid #e0e0e0; }
-  nav button { padding: 7px 16px; background: none; border: none; color: #999; cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  nav button.active { color: #111; border-bottom-color: #2563eb; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
 
-  .toolbar { padding: 10px 20px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #e8e8e8; background: #fff; }
-  input[type=search], input[type=text], input[type=date], select.filter, textarea {
-    background: #f5f5f5; border: 1px solid #d0d0d0; color: #1a1a1a; padding: 5px 10px; border-radius: 4px; font-size: 12px;
-  }
-  input[type=search] { width: 220px; }
-  input[type=search]:focus, input[type=text]:focus, input[type=date]:focus, select.filter:focus, textarea:focus {
-    outline: none; border-color: #2563eb; background: #fff;
-  }
-  .count { margin-left: auto; color: #aaa; font-size: 12px; }
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 48px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      z-index: 100;
+    }
 
-  table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; padding: 8px 12px; color: #aaa; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; background: #f5f5f5; cursor: pointer; user-select: none; white-space: nowrap; }
-  th:hover { color: #666; }
-  td { padding: 7px 12px; border-bottom: 1px solid #efefef; vertical-align: top; }
-  tr:hover td { background: #fafafa; }
+    .nav-logo {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-right: auto;
+    }
 
-  .scroll { overflow-y: auto; height: calc(100vh - 145px); }
+    .nav-logo span { color: var(--text-dim); }
 
-  a { color: #2563eb; text-decoration: none; }
-  a:hover { text-decoration: underline; }
+    nav button {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0 16px;
+      height: 48px;
+      transition: color 0.15s;
+      position: relative;
+    }
 
-  select.inline { background: #fff; border: 1px solid #d0d0d0; color: #1a1a1a; padding: 2px 6px; border-radius: 3px; font-size: 12px; cursor: pointer; }
-  select.inline:focus { outline: none; border-color: #2563eb; }
+    nav button:hover { color: var(--text); }
+    nav button.active { color: var(--accent); }
+    nav button.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 16px; right: 16px;
+      height: 1px;
+      background: var(--accent);
+    }
 
-  .desc-toggle { color: #bbb; cursor: pointer; font-size: 11px; white-space: nowrap; }
-  .desc-toggle:hover { color: #666; }
-  .desc-row td { padding: 4px 12px 10px; background: #fafafa; color: #666; font-size: 12px; line-height: 1.5; }
-  .desc-row td pre { white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto; }
+    /* SCREENS */
+    .screen { display: none; height: 100vh; padding-top: 48px; flex-direction: column; }
+    .screen.active { display: flex; }
 
-  .btn-del { background: none; border: none; color: #ddd; cursor: pointer; font-size: 14px; padding: 0 4px; }
-  .btn-del:hover { color: #ef4444; }
-  .btn-sm { padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; border: 1px solid #d0d0d0; background: #fff; color: #333; }
-  .btn-sm:hover { background: #f0f0f0; }
-  .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
-  .btn-primary:hover { background: #1d4ed8; }
+    /* ── CHAT ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-  .empty { text-align: center; padding: 60px; color: #ccc; }
-  .source-tag { font-size: 11px; color: #aaa; }
-  .event-tag { font-size: 11px; color: #7c3aed; background: #ede9fe; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
 
-  /* Event cards */
-  .events-grid { display: flex; flex-direction: column; gap: 0; }
-  .event-card { background: #fff; border-bottom: 1px solid #efefef; padding: 14px 20px; display: flex; gap: 16px; align-items: flex-start; cursor: pointer; }
-  .event-card:hover { background: #fafafa; }
-  .event-card.selected { background: #f0f4ff; border-left: 3px solid #2563eb; }
-  .event-meta { flex: 1; }
-  .event-name { font-weight: 600; font-size: 14px; color: #111; }
-  .event-date { font-size: 12px; color: #999; margin-top: 2px; }
-  .event-notes { font-size: 12px; color: #666; margin-top: 4px; }
-  .event-count { font-size: 12px; color: #2563eb; white-space: nowrap; padding-top: 2px; }
+    .message { display: flex; gap: 12px; max-width: 800px; }
+    .message.user { align-self: flex-end; flex-direction: row-reverse; }
 
-  /* Add event form */
-  .add-form { padding: 14px 20px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
-  .add-form label { font-size: 11px; color: #999; display: flex; flex-direction: column; gap: 3px; }
-  .add-form input, .add-form textarea { font-family: inherit; }
-  .add-form textarea { resize: none; height: 32px; width: 260px; }
+    .message-tag {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      padding-top: 3px;
+      min-width: 28px;
+      text-align: right;
+    }
 
-  /* Event detail panel */
-  .event-detail { padding: 0; }
-  .event-detail-header { padding: 14px 20px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; gap: 10px; align-items: center; }
-  .event-detail-header h3 { font-size: 14px; font-weight: 600; flex: 1; }
+    .message.user .message-tag { text-align: left; }
 
-  .split { display: flex; height: calc(100vh - 145px); }
-  .split-left { width: 360px; min-width: 280px; border-right: 1px solid #e0e0e0; overflow-y: auto; flex-shrink: 0; }
-  .split-right { flex: 1; overflow-y: auto; }
-</style>
+    .message-body {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 12px 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      max-width: 640px;
+      white-space: pre-wrap;
+    }
+
+    .message.user .message-body {
+      background: var(--accent-dim);
+      border-color: rgba(184, 255, 53, 0.2);
+    }
+
+    .message.system .message-body {
+      background: transparent;
+      border-color: transparent;
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 0 0 0 4px;
+    }
+
+    .input-area {
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      background: var(--bg);
+    }
+
+    .input-row { display: flex; gap: 12px; align-items: flex-end; }
+
+    textarea {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 12px 16px;
+      resize: none;
+      min-height: 80px;
+      max-height: 240px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus { border-color: var(--border-2); }
+    textarea::placeholder { color: var(--text-dim); }
+
+    .send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 2px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0 20px;
+      height: 44px;
+      transition: opacity 0.15s;
+    }
+
+    .send-btn:hover { opacity: 0.85; }
+
+    .input-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 1px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      align-self: flex-end;
+    }
+
+    .mode-btn {
+      background: var(--surface);
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0 14px;
+      height: 44px;
+      transition: all 0.15s;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .mode-btn:not(.active):hover { color: var(--text); }
+
+    /* ── RETRO ── */
+    #screen-retro { overflow-y: auto; padding: 80px 24px 32px; }
+
+    .retro-header {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .retro-title {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .retro-date { font-size: 11px; color: var(--accent); }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-bottom: 32px;
+    }
+
+    .stat { background: var(--bg); padding: 20px 24px; }
+
+    .stat-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 300;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .stat-delta { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+    .stat-delta.up { color: var(--accent); }
+    .stat-delta.down { color: var(--red); }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .funnel-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-bottom: 32px;
+    }
+
+    .funnel-cell { background: var(--bg); padding: 20px; }
+
+    .funnel-source {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    .funnel-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+      font-size: 12px;
+    }
+
+    .funnel-stage { color: var(--text-mid); }
+    .funnel-count { color: var(--text); font-weight: 500; }
+
+    .funnel-bar {
+      height: 1px;
+      background: var(--border-2);
+      margin: 6px 0 10px;
+      position: relative;
+    }
+
+    .funnel-bar-fill {
+      position: absolute;
+      left: 0; top: 0;
+      height: 100%;
+      background: var(--accent);
+    }
+
+    .action-items { display: flex; flex-direction: column; gap: 1px; }
+
+    .action-item {
+      background: var(--surface);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 12px;
+    }
+
+    .action-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--amber);
+      flex-shrink: 0;
+    }
+
+    .action-dot.urgent { background: var(--red); }
+    .action-dot.ok { background: var(--accent); }
+
+    .action-name { color: var(--text); flex: 1; }
+    .action-company { color: var(--text-dim); min-width: 80px; }
+    .action-meta { color: var(--text-dim); font-size: 10px; }
+
+    /* ── PIPELINE ── */
+    #screen-pipeline { overflow-y: auto; padding: 80px 24px 32px; }
+
+    .pipeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .screen-title {
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 400;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    tr:hover td { background: var(--surface); }
+
+    .stage-badge {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    .stage-outreached { background: var(--surface-2); color: var(--text-mid); }
+    .stage-responded { background: rgba(255, 170, 0, 0.1); color: var(--amber); }
+    .stage-ongoing { background: var(--accent-mid); color: var(--accent); }
+    .stage-dead { background: transparent; color: var(--border-2); }
+
+    /* ── KNOWLEDGE ── */
+    #screen-knowledge { overflow-y: auto; padding: 80px 24px 32px; }
+
+    .knowledge-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .search-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      padding: 10px 16px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-input:focus { border-color: var(--border-2); }
+    .search-input::placeholder { color: var(--text-dim); }
+
+    .add-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 2px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0 16px;
+      height: 38px;
+      transition: opacity 0.15s;
+    }
+
+    .add-btn:hover { opacity: 0.85; }
+
+    .knowledge-list { display: flex; flex-direction: column; gap: 1px; }
+
+    .knowledge-item {
+      background: var(--surface);
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .knowledge-item:hover { background: var(--surface-2); }
+
+    .knowledge-item-title { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+
+    .knowledge-item-url {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .knowledge-item-notes {
+      font-size: 11px;
+      color: var(--text-mid);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    /* ── SCHEMA ── */
+    .schema-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .schema-table-header {
+      padding: 8px 12px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      color: #D4A017;
+    }
+    .schema-col {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 12px;
+    }
+    .schema-col:hover { background: #ffffff05; }
+    .sbadge {
+      font-size: 8px;
+      font-weight: 500;
+      width: 20px;
+      flex-shrink: 0;
+      color: var(--text-dim);
+    }
+    .sbadge.pk { color: #D4A017; }
+    .sbadge.fk { color: #6B9DC8; }
+    .scol-name { font-size: 10px; color: var(--text-mid); flex: 1; }
+    .scol-type { font-size: 9px; color: var(--text-dim); }
+    .scol-type.fk { color: #6B9DC8; opacity: 0.7; }
+    .scol-type.en { color: #7BAF6E; }
+
+  </style>
 </head>
 <body>
 
-<header>
-  <h1>Job Search</h1>
-  <div class="stats" id="stats"></div>
-</header>
-
 <nav>
-  <button class="active" onclick="showTab('jobs')">Job Postings</button>
-  <button onclick="showTab('contacts')">Contacts</button>
-  <button onclick="showTab('events')">Events</button>
+  <div class="nav-logo">◆ <span>JOB</span>SEARCH</div>
+  <button class="active" data-screen="chat">Chat</button>
+  <button data-screen="retro">Retro</button>
+  <button data-screen="pipeline">Pipeline</button>
+  <button data-screen="knowledge">Notes</button>
+  <button data-screen="schema" style="margin-left:auto; color: var(--text-dim); font-size:11px;">Schema</button>
 </nav>
 
-<!-- Jobs -->
-<div id="tab-jobs">
-  <div class="toolbar">
-    <input type="search" id="job-search" placeholder="Search company, title…" oninput="renderJobs()">
-    <select class="filter" id="job-status" onchange="renderJobs()">
-      <option value="">All statuses</option>
-      <option value="new">New</option>
-      <option value="applied">Applied</option>
-      <option value="dropped">Dropped</option>
-    </select>
-    <select class="filter" id="job-source" onchange="renderJobs()">
-      <option value="">All sources</option>
-    </select>
-    <span class="count" id="job-count"></span>
-  </div>
-  <div class="scroll">
-    <table>
-      <thead><tr>
-        <th onclick="sortJobs('scraped_date')">Date</th>
-        <th onclick="sortJobs('company')">Company</th>
-        <th onclick="sortJobs('title')">Title</th>
-        <th onclick="sortJobs('source')">Source</th>
-        <th onclick="sortJobs('status')">Status</th>
-        <th></th>
-      </tr></thead>
-      <tbody id="jobs-body"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Contacts -->
-<div id="tab-contacts" style="display:none">
-  <div class="toolbar">
-    <input type="search" id="contact-search" placeholder="Search name, company…" oninput="renderContacts()">
-    <select class="filter" id="contact-stage" onchange="renderContacts()">
-      <option value="">All stages</option>
-      <option value="Outreached">Outreached</option>
-      <option value="Responded">Responded</option>
-      <option value="Ongoing">Ongoing</option>
-      <option value="Dead">Dead</option>
-    </select>
-    <select class="filter" id="contact-event" onchange="renderContacts()">
-      <option value="">All events</option>
-    </select>
-    <span class="count" id="contact-count"></span>
-  </div>
-  <div class="scroll">
-    <table>
-      <thead><tr>
-        <th onclick="sortContacts('name')">Name</th>
-        <th onclick="sortContacts('company')">Company</th>
-        <th onclick="sortContacts('role')">Role</th>
-        <th onclick="sortContacts('source')">Source</th>
-        <th onclick="sortContacts('event_name')">Event</th>
-        <th onclick="sortContacts('stage')">Stage</th>
-        <th onclick="sortContacts('last_contact')">Last Contact</th>
-        <th></th>
-      </tr></thead>
-      <tbody id="contacts-body"></tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Events -->
-<div id="tab-events" style="display:none">
-  <div class="add-form">
-    <label>Event name<input type="text" id="ev-name" placeholder="e.g. SD Tech Meetup" style="width:200px"></label>
-    <label>Date<input type="date" id="ev-date"></label>
-    <label>Notes<textarea id="ev-notes" placeholder="Optional"></textarea></label>
-    <button class="btn-sm btn-primary" onclick="addEvent()">Add Event</button>
-  </div>
-  <div class="split">
-    <div class="split-left" id="events-list"></div>
-    <div class="split-right" id="event-detail">
-      <div class="empty">Select an event to see connections</div>
+<!-- CHAT -->
+<div id="screen-chat" class="screen active">
+  <div class="messages" id="messages">
+    <div class="message system">
+      <div class="message-body">Ready. Paste a job description, LinkedIn profile, YC message, or anything you want logged.</div>
     </div>
+  </div>
+  <div class="input-area">
+    <div class="input-row">
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-input">Input</button>
+        <button class="mode-btn" id="mode-rag">RAG</button>
+      </div>
+      <textarea id="input" placeholder="Paste anything — job post, LinkedIn profile, message you sent, application notes..."></textarea>
+      <button class="send-btn" id="send-btn">Send</button>
+    </div>
+    <div class="input-hint">⌘+Enter to send · <span id="mode-hint">Agent logs to database</span></div>
+  </div>
+</div>
+
+<!-- RETRO -->
+<div id="screen-retro" class="screen">
+  <div class="retro-header">
+    <div class="retro-title">Weekly Retro</div>
+    <div class="retro-date" id="retro-date"></div>
+  </div>
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-label">Sent out</div>
+      <div class="stat-value">23</div>
+      <div class="stat-delta up">↑ +8 from last week</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Replies in</div>
+      <div class="stat-value">4</div>
+      <div class="stat-delta up">↑ +3</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Reply rate</div>
+      <div class="stat-value">17%</div>
+      <div class="stat-delta">— same as last week</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Active convos</div>
+      <div class="stat-value">6</div>
+      <div class="stat-delta up">↑ +2</div>
+    </div>
+  </div>
+  <div class="section-label">Funnel by source</div>
+  <div class="funnel-grid">
+    <div class="funnel-cell">
+      <div class="funnel-source">YC Jobs</div>
+      <div class="funnel-row"><span class="funnel-stage">Outreached</span><span class="funnel-count">12</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">3</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:25%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">2</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:17%"></div></div>
+    </div>
+    <div class="funnel-cell">
+      <div class="funnel-source">LinkedIn</div>
+      <div class="funnel-row"><span class="funnel-stage">Outreached</span><span class="funnel-count">8</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">1</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:12%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">0</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:0%"></div></div>
+    </div>
+    <div class="funnel-cell">
+      <div class="funnel-source">Events</div>
+      <div class="funnel-row"><span class="funnel-stage">Met</span><span class="funnel-count">3</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">2</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:67%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">2</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:67%"></div></div>
+    </div>
+    <div class="funnel-cell">
+      <div class="funnel-source">Company Site</div>
+      <div class="funnel-row"><span class="funnel-stage">Applied</span><span class="funnel-count">5</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">0</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:0%"></div></div>
+      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">0</span></div>
+      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:0%"></div></div>
+    </div>
+  </div>
+  <div class="section-label">Needs action</div>
+  <div class="action-items">
+    <div class="action-item">
+      <div class="action-dot urgent"></div>
+      <div class="action-name">Marcus Lee</div>
+      <div class="action-company">Deel</div>
+      <div class="action-meta">Interview tomorrow — prep</div>
+    </div>
+    <div class="action-item">
+      <div class="action-dot"></div>
+      <div class="action-name">Sarah Chen</div>
+      <div class="action-company">Stripe</div>
+      <div class="action-meta">Responded 3 days ago — follow up</div>
+    </div>
+    <div class="action-item">
+      <div class="action-dot ok"></div>
+      <div class="action-name">Jordan Park</div>
+      <div class="action-company">Linear</div>
+      <div class="action-meta">Intro call scheduled Friday</div>
+    </div>
+  </div>
+</div>
+
+<!-- PIPELINE -->
+<div id="screen-pipeline" class="screen">
+  <div class="pipeline-header">
+    <div class="screen-title">Pipeline</div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Company</th>
+        <th>Role</th>
+        <th>Source</th>
+        <th>Stage</th>
+        <th>Last contact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Marcus Lee</td><td>Deel</td><td>Head of Growth</td><td>YC</td>
+        <td><span class="stage-badge stage-ongoing">Ongoing</span></td><td>2 days ago</td>
+      </tr>
+      <tr>
+        <td>Sarah Chen</td><td>Stripe</td><td>Eng Manager</td><td>LinkedIn</td>
+        <td><span class="stage-badge stage-responded">Responded</span></td><td>3 days ago</td>
+      </tr>
+      <tr>
+        <td>Jordan Park</td><td>Linear</td><td>PM</td><td>Event</td>
+        <td><span class="stage-badge stage-ongoing">Ongoing</span></td><td>1 day ago</td>
+      </tr>
+      <tr>
+        <td>—</td><td>Cabal</td><td>Software Engineer</td><td>YC</td>
+        <td><span class="stage-badge stage-outreached">Outreached</span></td><td>14 days ago</td>
+      </tr>
+      <tr>
+        <td>—</td><td>Vercel</td><td>Software Engineer</td><td>Company Site</td>
+        <td><span class="stage-badge stage-dead">Dead</span></td><td>21 days ago</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- KNOWLEDGE -->
+<div id="screen-knowledge" class="screen">
+  <div class="knowledge-header">
+    <input class="search-input" placeholder="Search by topic — burnout, cold outreach, system design..." />
+    <button class="add-btn">+ Add</button>
+  </div>
+  <div class="knowledge-list">
+    <div class="knowledge-item">
+      <div class="knowledge-item-title">The founder-mode job search</div>
+      <div class="knowledge-item-url">paulgraham.com/foundermode.html</div>
+      <div class="knowledge-item-notes">Treat the job search like a startup. High volume, fast feedback loops, double down on what works. Don't optimize prematurely.</div>
+    </div>
+    <div class="knowledge-item">
+      <div class="knowledge-item-title">How to deal with job search burnout</div>
+      <div class="knowledge-item-url">lethain.com/job-search-burnout</div>
+      <div class="knowledge-item-notes">Take Sundays off. Quality of outreach degrades badly when depleted. 4 good applications beat 12 mediocre ones every time.</div>
+    </div>
+    <div class="knowledge-item">
+      <div class="knowledge-item-title">Cold outreach that actually works in 2026</div>
+      <div class="knowledge-item-url">a16z.com/cold-outreach</div>
+      <div class="knowledge-item-notes">Specificity is everything. Reference one concrete thing about the company. Generic messages are detectable instantly.</div>
+    </div>
+  </div>
+</div>
+
+<div id="screen-schema" class="screen" style="overflow-y:auto; padding: 80px 24px 32px;">
+  <div class="screen-title">Schema</div>
+
+  <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);font-family:var(--font);">
+      <div style="width:7px;height:7px;border-radius:50%;background:#D4A017"></div>PRIMARY KEY
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);font-family:var(--font);">
+      <div style="width:7px;height:7px;border-radius:50%;background:#6B9DC8"></div>FOREIGN KEY
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);font-family:var(--font);">
+      <div style="width:7px;height:7px;border-radius:50%;background:#7BAF6E"></div>ENUM
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px;">
+
+    <div class="schema-table">
+      <div class="schema-table-header">companies</div>
+      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">name</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">website</span><span class="scol-type">text?</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-table-header">contacts</div>
+      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">name</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">company_id</span><span class="scol-type fk">→ companies</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">role</span><span class="scol-type">text?</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">source</span><span class="scol-type en">enum</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">stage</span><span class="scol-type en">enum</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">outreach_date</span><span class="scol-type">date</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text?</span></div>
+      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">event_id</span><span class="scol-type fk">→ events?</span></div>
+      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">content_post_id</span><span class="scol-type fk">→ content_posts?</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-table-header">job_postings</div>
+      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">company_id</span><span class="scol-type fk">→ companies</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">title</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">link</span><span class="scol-type">text?</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">source</span><span class="scol-type en">enum</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">scraped_date</span><span class="scol-type">date</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">status</span><span class="scol-type en">enum</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">description</span><span class="scol-type">text?</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">resume_path</span><span class="scol-type">text?</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-table-header">interactions</div>
+      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">contact_id</span><span class="scol-type fk">→ contacts</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">date</span><span class="scol-type">date</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">direction</span><span class="scol-type en">enum</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-table-header">events</div>
+      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">name</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">date</span><span class="scol-type">date</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text?</span></div>
+    </div>
+
+    <div class="schema-table">
+      <div class="schema-table-header">content_posts</div>
+      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">posted_date</span><span class="scol-type">date</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">title</span><span class="scol-type">text</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">impressions</span><span class="scol-type">int</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">reactions</span><span class="scol-type">int</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">comments</span><span class="scol-type">int</span></div>
+      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">reposts</span><span class="scol-type">int</span></div>
+    </div>
+
   </div>
 </div>
 
 <script>
-let jobs = [], contacts = [], events = [];
-let jobSort = { key: 'scraped_date', dir: -1 };
-let contactSort = { key: 'last_contact', dir: -1 };
-let expandedJobs = new Set();
-let selectedEventId = null;
-
-async function load() {
-  [jobs, contacts, events] = await Promise.all([
-    fetch('/api/jobs').then(r => r.json()),
-    fetch('/api/contacts').then(r => r.json()),
-    fetch('/api/events').then(r => r.json()),
-  ]);
-  populateSources();
-  populateEventFilter();
-  renderJobs();
-  renderContacts();
-  renderEvents();
-  loadStats();
-}
-
-async function loadStats() {
-  const s = await fetch('/api/stats').then(r => r.json());
-  const jMap = Object.fromEntries(s.jobs.map(r => [r.status, r.n]));
-  const cMap = Object.fromEntries(s.contacts.map(r => [r.stage, r.n]));
-  document.getElementById('stats').innerHTML = `
-    <div class="stat">New <span>${jMap.new||0}</span></div>
-    <div class="stat">Applied <span>${jMap.applied||0}</span></div>
-    <div class="stat" style="margin-left:12px">Ongoing <span>${cMap.Ongoing||0}</span></div>
-    <div class="stat">Responded <span>${cMap.Responded||0}</span></div>
-    <div class="stat">Dead <span>${cMap.Dead||0}</span></div>
-    <div class="stat" style="margin-left:12px">Events <span>${events.length}</span></div>
-  `;
-}
-
-function populateSources() {
-  const sources = [...new Set(jobs.map(j => j.source).filter(Boolean))].sort();
-  const sel = document.getElementById('job-source');
-  sel.innerHTML = '<option value="">All sources</option>';
-  sources.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
-}
-
-function populateEventFilter() {
-  const sel = document.getElementById('contact-event');
-  sel.innerHTML = '<option value="">All events</option>';
-  events.forEach(e => { const o = document.createElement('option'); o.value = e.id; o.textContent = e.name; sel.appendChild(o); });
-}
-
-function showTab(tab) {
-  ['jobs','contacts','events'].forEach(t => {
-    document.getElementById(`tab-${t}`).style.display = t === tab ? '' : 'none';
+  document.querySelectorAll('nav button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('screen-' + btn.dataset.screen).classList.add('active');
+    });
   });
-  document.querySelectorAll('nav button').forEach((b, i) => {
-    b.classList.toggle('active', ['jobs','contacts','events'][i] === tab);
-  });
-}
 
-// ── Jobs ──────────────────────────────────────────────────────────────────────
+  document.getElementById('retro-date').textContent =
+    'Week of ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-function sortJobs(key) { jobSort = { key, dir: jobSort.key === key ? -jobSort.dir : -1 }; renderJobs(); }
+  const input = document.getElementById('input');
+  let mode = 'input';
 
-function renderJobs() {
-  const status = document.getElementById('job-status').value;
-  const source = document.getElementById('job-source').value;
-  const q = document.getElementById('job-search').value.toLowerCase();
-  let rows = jobs.filter(r => {
-    if (q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
-    if (status && r.status !== status) return false;
-    if (source && r.source !== source) return false;
-    return true;
-  }).sort((a, b) => {
-    const av = a[jobSort.key] ?? '', bv = b[jobSort.key] ?? '';
-    return jobSort.dir * (av < bv ? -1 : av > bv ? 1 : 0);
-  });
-  document.getElementById('job-count').textContent = `${rows.length} jobs`;
+  document.getElementById('mode-input').addEventListener('click', () => setMode('input'));
+  document.getElementById('mode-rag').addEventListener('click', () => setMode('rag'));
 
-  const tbody = document.getElementById('jobs-body');
-  tbody.innerHTML = '';
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No jobs found</td></tr>'; return; }
-  rows.forEach(j => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="white-space:nowrap;color:#999;font-size:11px">${j.scraped_date||''}</td>
-      <td><strong>${esc(j.company)}</strong></td>
-      <td>${j.link ? `<a href="${esc(j.link)}" target="_blank">${esc(j.title)}</a>` : esc(j.title)}
-        ${j.description ? `<br><span class="desc-toggle" onclick="toggleDesc('${j.id}')">▸ desc</span>` : ''}</td>
-      <td class="source-tag">${esc(j.source||'')}</td>
-      <td><select class="inline" onchange="updateJob('${j.id}', this.value)">
-        ${['new','applied','dropped'].map(s => `<option${s===j.status?' selected':''}>${s}</option>`).join('')}
-      </select></td>
-      <td><button class="btn-del" onclick="deleteJob('${j.id}')">×</button></td>
-    `;
-    tbody.appendChild(tr);
-    if (expandedJobs.has(j.id)) {
-      const dr = document.createElement('tr');
-      dr.className = 'desc-row';
-      dr.innerHTML = `<td colspan="6"><pre>${esc(j.description||'')}</pre></td>`;
-      tbody.appendChild(dr);
+  function setMode(m) {
+    mode = m;
+    document.getElementById('mode-input').classList.toggle('active', m === 'input');
+    document.getElementById('mode-rag').classList.toggle('active', m === 'rag');
+    const hint = document.getElementById('mode-hint');
+    const placeholder = document.getElementById('input');
+    if (m === 'input') {
+      hint.textContent = 'Agent logs to database';
+      placeholder.placeholder = 'Paste anything — job post, LinkedIn profile, message you sent, application notes...';
+    } else {
+      hint.textContent = 'Semantic search across saved knowledge';
+      placeholder.placeholder = 'Search your notes — try "burnout", "cold outreach", "system design"...';
     }
-  });
-}
-
-function toggleDesc(id) { expandedJobs.has(id) ? expandedJobs.delete(id) : expandedJobs.add(id); renderJobs(); }
-
-async function updateJob(id, status) {
-  await fetch(`/api/jobs/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status }) });
-  const j = jobs.find(x => x.id === id); if (j) j.status = status;
-  loadStats();
-}
-
-async function deleteJob(id) {
-  if (!confirm('Delete this posting?')) return;
-  await fetch(`/api/jobs/${id}`, { method: 'DELETE' });
-  jobs = jobs.filter(x => x.id !== id); renderJobs(); loadStats();
-}
-
-// ── Contacts ──────────────────────────────────────────────────────────────────
-
-function sortContacts(key) { contactSort = { key, dir: contactSort.key === key ? -contactSort.dir : -1 }; renderContacts(); }
-
-function renderContacts() {
-  const stage = document.getElementById('contact-stage').value;
-  const eventId = document.getElementById('contact-event').value;
-  const q = document.getElementById('contact-search').value.toLowerCase();
-  let rows = contacts.filter(r => {
-    if (q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
-    if (stage && r.stage !== stage) return false;
-    if (eventId && r.event_id !== eventId) return false;
-    return true;
-  }).sort((a, b) => {
-    const av = a[contactSort.key] ?? '', bv = b[contactSort.key] ?? '';
-    return contactSort.dir * (av < bv ? -1 : av > bv ? 1 : 0);
-  });
-  document.getElementById('contact-count').textContent = `${rows.length} contacts`;
-
-  const tbody = document.getElementById('contacts-body');
-  tbody.innerHTML = '';
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">No contacts found</td></tr>'; return; }
-  rows.forEach(c => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${esc(c.name||'')}</strong></td>
-      <td>${esc(c.company||'')}</td>
-      <td style="color:#777">${esc(c.role||'')}</td>
-      <td class="source-tag">${esc(c.source||'')}</td>
-      <td>${c.event_name ? `<span class="event-tag">${esc(c.event_name)}</span>` : ''}</td>
-      <td><select class="inline" onchange="updateContact('${c.id}', this.value)">
-        ${['Outreached','Responded','Ongoing','Dead'].map(s => `<option${s===c.stage?' selected':''}>${s}</option>`).join('')}
-      </select></td>
-      <td style="color:#999;white-space:nowrap;font-size:11px">${c.last_contact||'—'}</td>
-      <td><button class="btn-del" onclick="deleteContact('${c.id}')">×</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-async function updateContact(id, stage) {
-  await fetch(`/api/contacts/${id}`, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ stage }) });
-  const c = contacts.find(x => x.id === id); if (c) c.stage = stage;
-  loadStats();
-}
-
-async function deleteContact(id) {
-  if (!confirm('Delete this contact?')) return;
-  await fetch(`/api/contacts/${id}`, { method: 'DELETE' });
-  contacts = contacts.filter(x => x.id !== id); renderContacts(); loadStats();
-}
-
-// ── Events ────────────────────────────────────────────────────────────────────
-
-function renderEvents() {
-  const list = document.getElementById('events-list');
-  if (!events.length) {
-    list.innerHTML = '<div class="empty">No events yet — add one above</div>';
-    return;
   }
-  list.innerHTML = events.map(e => `
-    <div class="event-card${selectedEventId === e.id ? ' selected' : ''}" onclick="selectEvent('${e.id}')">
-      <div class="event-meta">
-        <div class="event-name">${esc(e.name)}</div>
-        <div class="event-date">${e.date || 'No date'}</div>
-        ${e.notes ? `<div class="event-notes">${esc(e.notes)}</div>` : ''}
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <div class="event-count">${e.contact_count} connection${e.contact_count !== 1 ? 's' : ''}</div>
-        <button class="btn-del" onclick="deleteEvent(event, '${e.id}')">×</button>
-      </div>
-    </div>
-  `).join('');
-}
 
-async function selectEvent(id) {
-  selectedEventId = id;
-  renderEvents();
-  const ev = events.find(e => e.id === id);
-  const contactsAtEvent = await fetch(`/api/events/${id}/contacts`).then(r => r.json());
+  input.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); send(); }
+  });
 
-  const detail = document.getElementById('event-detail');
-  detail.innerHTML = `
-    <div class="event-detail-header">
-      <h3>${esc(ev.name)}</h3>
-      <span style="color:#999;font-size:12px">${ev.date || ''}</span>
-    </div>
-    ${contactsAtEvent.length ? `
-    <table>
-      <thead><tr>
-        <th>Name</th><th>Company</th><th>Role</th><th>Stage</th><th>Last Contact</th>
-      </tr></thead>
-      <tbody>
-        ${contactsAtEvent.map(c => `<tr>
-          <td><strong>${esc(c.name)}</strong></td>
-          <td>${esc(c.company||'')}</td>
-          <td style="color:#777">${esc(c.role||'')}</td>
-          <td><span style="font-size:11px;color:#555">${esc(c.stage)}</span></td>
-          <td style="color:#999;font-size:11px">${c.last_contact||'—'}</td>
-        </tr>`).join('')}
-      </tbody>
-    </table>` : '<div class="empty">No connections logged for this event yet</div>'}
-  `;
-}
+  input.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 240) + 'px';
+  });
 
-async function addEvent() {
-  const name = document.getElementById('ev-name').value.trim();
-  if (!name) { alert('Event name is required'); return; }
-  const date = document.getElementById('ev-date').value;
-  const notes = document.getElementById('ev-notes').value.trim();
-  const ev = await fetch('/api/events', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ name, date: date||null, notes: notes||null }),
-  }).then(r => r.json());
-  events.unshift(ev);
-  document.getElementById('ev-name').value = '';
-  document.getElementById('ev-date').value = '';
-  document.getElementById('ev-notes').value = '';
-  populateEventFilter();
-  renderEvents();
-  loadStats();
-}
+  document.getElementById('send-btn').addEventListener('click', send);
 
-async function deleteEvent(e, id) {
-  e.stopPropagation();
-  if (!confirm('Delete this event?')) return;
-  await fetch(`/api/events/${id}`, { method: 'DELETE' });
-  events = events.filter(x => x.id !== id);
-  if (selectedEventId === id) {
-    selectedEventId = null;
-    document.getElementById('event-detail').innerHTML = '<div class="empty">Select an event to see connections</div>';
+  function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    addMessage('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+    // Input mode → Mastra agent · RAG mode → vector search
+    setTimeout(() => addMessage('agent', mode === 'rag' ? 'Searching knowledge base...' : 'Processing...'), 300);
   }
-  populateEventFilter();
-  renderEvents();
-  loadStats();
-}
 
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-load();
+  function addMessage(role, text) {
+    const messages = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'message' + (role === 'user' ? ' user' : '');
+    div.innerHTML = `<div class="message-tag">${role === 'user' ? 'you' : 'os'}</div><div class="message-body">${text}</div>`;
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+  }
 </script>
 </body>
 </html>
