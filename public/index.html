@@ -865,7 +865,7 @@
 
   document.getElementById('send-btn').addEventListener('click', send);
 
-  const AGENT_URL = 'http://localhost:4111/api/agents/jobsearch/generate';
+  const AGENT_URL = '/api/agents/jobsearch/generate';
 
   async function send() {
     const text = input.value.trim();
