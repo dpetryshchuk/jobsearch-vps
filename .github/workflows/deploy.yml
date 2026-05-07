@@ -17,5 +17,6 @@ jobs:
           script: |
             cd ~/jobsearch
             git pull
-            npm install --omit=dev
+            npm install
+            npx mastra build
             sudo systemctl restart jobsearch

@@ -214,12 +214,28 @@ TypeScript is JavaScript with types. You annotate your variables and function si
 
 </details>
 
-### ⬜ Step 7 — App systemd service
-### ⬜ Step 8 — Git push-to-deploy
-### ⬜ Step 9 — Migrate SQLite → Postgres
-### ⬜ Step 10 — /ingest endpoint (Deepseek extraction)
-### ⬜ Step 11 — pgvector embeddings pipeline
-### ⬜ Step 12 — /context RAG endpoint
-### ⬜ Step 13 — Make/Mesh webhook integration
-### ⬜ Step 14 — Chrome extension
-### ⬜ Step 15 — Domain + HTTPS
+### ✅ Step 7 — App systemd service
+
+```bash
+sudo nano /etc/systemd/system/jobsearch.service
+sudo systemctl daemon-reload
+sudo systemctl enable jobsearch
+sudo systemctl restart jobsearch
+```
+
+Service runs `npx mastra dev --port 4111` as user `dima`, loads env from `/home/dima/jobsearch/.env`, restarts automatically on crash. Added passwordless sudo for `systemctl restart jobsearch` via `/etc/sudoers.d/jobsearch` so GitHub Actions can restart without a password.
+
+### ✅ Step 8 — Git push-to-deploy
+
+GitHub Actions workflow at `.github/workflows/deploy.yml`. Triggers on push to `master`. SSHes into VPS using a dedicated ed25519 deploy key (stored as `VPS_SSH_KEY` GitHub secret), runs `git pull && npm install && sudo systemctl restart jobsearch`. Deploy key public half is in `~/.ssh/authorized_keys` on VPS.
+
+### ✅ Step 9 — Migrate SQLite → Postgres
+
+Migrated 26 companies and 36 contacts from `jobsearch/db/jobsearch.sqlite` into VPS Postgres via `node db/migrate-pg.js` over SSH tunnel (`ssh -L 5432:localhost:5432 dima@46.225.78.10`). Job postings not migrated — scraped noise, re-scrape instead.
+
+### ⬜ Step 10 — Wire frontend to VPS (Caddy + AGENT_URL)
+### ⬜ Step 11 — Langfuse observability (traces showing in dashboard)
+### ⬜ Step 12 — pgvector embeddings pipeline
+### ⬜ Step 13 — /context RAG endpoint
+### ⬜ Step 14 — Caddy basic auth
+### ⬜ Step 15 — Chrome extension
