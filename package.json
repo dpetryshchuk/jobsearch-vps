@@ -12,7 +12,6 @@
     "scrape:jobspy": "python tools/scrape-jobspy.py",
     "scrape:dry": "tsx tools/scrape-yc-jobs.ts --dry && tsx tools/scrape-hn-jobs.ts --dry && tsx tools/scrape-remoteok.ts --dry && tsx tools/scrape-simplifyjobs.ts --dry",
     "dev": "mastra dev",
-    "server": "tsx server.ts",
     "db:query": "tsx tools/query.ts",
     "db:backup": "node -e \"const fs=require('fs');const d=new Date().toISOString().slice(0,10);fs.mkdirSync('db/backups',{recursive:true});fs.copyFileSync('db/jobsearch.sqlite','db/backups/'+d+'.sqlite');console.log('Backed up to db/backups/'+d+'.sqlite')\""
   },

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>JOBSEARCH OS</title>
+  <title>JOBSEARCH OS — Chat</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
@@ -16,16 +16,15 @@
     <span class="nav-logo-diamond"></span>
     JOBSEARCH
   </div>
-  <button class="active" data-screen="chat">Chat</button>
-  <button data-screen="retro">Retro</button>
-  <button data-screen="pipeline">Pipeline</button>
-  <button data-screen="knowledge">Notes</button>
+  <button class="active" onclick="location.href='/'">Chat</button>
+  <button onclick="location.href='/retro'">Retro</button>
+  <button onclick="location.href='/pipeline'">Pipeline</button>
+  <button onclick="location.href='/notes'">Notes</button>
   <span class="nav-spacer"></span>
-  <button data-screen="schema">Schema</button>
+  <button onclick="location.href='/schema'">Schema</button>
 </nav>
 
-<!-- CHAT -->
-<div id="screen-chat" class="screen active">
+<div class="screen active" style="display:flex;flex-direction:column;overflow:hidden;">
   <div class="messages" id="messages">
     <div class="message system">
       <div class="message-tag">sys</div>
@@ -47,232 +46,9 @@
   </div>
 </div>
 
-<!-- RETRO -->
-<div id="screen-retro" class="screen">
-  <div class="retro-header">
-    <div class="retro-title">Weekly Retro</div>
-    <div class="retro-date" id="retro-date"></div>
-  </div>
-  <div class="stats-row">
-    <div class="stat">
-      <div class="stat-label">Sent out</div>
-      <div class="stat-value">23</div>
-      <div class="stat-delta up">↑ +8 from last week</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Replies in</div>
-      <div class="stat-value">4</div>
-      <div class="stat-delta up">↑ +3</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Reply rate</div>
-      <div class="stat-value">17%</div>
-      <div class="stat-delta">— same as last week</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Active convos</div>
-      <div class="stat-value">6</div>
-      <div class="stat-delta up">↑ +2</div>
-    </div>
-  </div>
-  <div class="section-label">Funnel by source</div>
-  <div class="funnel-grid">
-    <div class="funnel-cell">
-      <div class="funnel-source">YC Jobs</div>
-      <div class="funnel-row"><span class="funnel-stage">Outreached</span><span class="funnel-count">12</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">3</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:25%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">2</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:17%"></div></div>
-    </div>
-    <div class="funnel-cell">
-      <div class="funnel-source">LinkedIn</div>
-      <div class="funnel-row"><span class="funnel-stage">Outreached</span><span class="funnel-count">8</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">1</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:12%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">0</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:0%"></div></div>
-    </div>
-    <div class="funnel-cell">
-      <div class="funnel-source">Events</div>
-      <div class="funnel-row"><span class="funnel-stage">Met</span><span class="funnel-count">3</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">2</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:67%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">2</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:67%"></div></div>
-    </div>
-    <div class="funnel-cell">
-      <div class="funnel-source">Company Site</div>
-      <div class="funnel-row"><span class="funnel-stage">Applied</span><span class="funnel-count">5</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:100%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Responded</span><span class="funnel-count">0</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:0%"></div></div>
-      <div class="funnel-row"><span class="funnel-stage">Ongoing</span><span class="funnel-count">0</span></div>
-      <div class="funnel-bar"><div class="funnel-bar-fill" style="width:0%"></div></div>
-    </div>
-  </div>
-  <div class="section-label">Needs action</div>
-  <div class="action-items">
-    <div class="action-item">
-      <div class="action-dot urgent"></div>
-      <div class="action-name">Marcus Lee</div>
-      <div class="action-company">Deel</div>
-      <div class="action-meta">Interview tomorrow — prep</div>
-    </div>
-    <div class="action-item">
-      <div class="action-dot"></div>
-      <div class="action-name">Sarah Chen</div>
-      <div class="action-company">Stripe</div>
-      <div class="action-meta">Responded 3 days ago — follow up</div>
-    </div>
-    <div class="action-item">
-      <div class="action-dot ok"></div>
-      <div class="action-name">Jordan Park</div>
-      <div class="action-company">Linear</div>
-      <div class="action-meta">Intro call scheduled Friday</div>
-    </div>
-  </div>
-</div>
-
-<!-- PIPELINE -->
-<div id="screen-pipeline" class="screen">
-  <div class="pipeline-header">
-    <div class="screen-title">Pipeline</div>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Company</th>
-        <th>Role</th>
-        <th>Source</th>
-        <th>Stage</th>
-        <th>Last contact</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Marcus Lee</td><td>Deel</td><td>Head of Growth</td><td>YC</td>
-        <td><span class="stage-badge stage-ongoing">Ongoing</span></td><td>2 days ago</td>
-      </tr>
-      <tr>
-        <td>Sarah Chen</td><td>Stripe</td><td>Eng Manager</td><td>LinkedIn</td>
-        <td><span class="stage-badge stage-responded">Responded</span></td><td>3 days ago</td>
-      </tr>
-      <tr>
-        <td>Jordan Park</td><td>Linear</td><td>PM</td><td>Event</td>
-        <td><span class="stage-badge stage-ongoing">Ongoing</span></td><td>1 day ago</td>
-      </tr>
-      <tr>
-        <td>—</td><td>Cabal</td><td>Software Engineer</td><td>YC</td>
-        <td><span class="stage-badge stage-outreached">Outreached</span></td><td>14 days ago</td>
-      </tr>
-      <tr>
-        <td>—</td><td>Vercel</td><td>Software Engineer</td><td>Company Site</td>
-        <td><span class="stage-badge stage-dead">Dead</span></td><td>21 days ago</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- NOTES (file browser) -->
-<div id="screen-knowledge" class="screen">
-  <div class="knowledge-header">
-    <input class="search-input" placeholder="Search notes..." />
-    <button class="add-btn">+ Add</button>
-  </div>
-  <div class="knowledge-list">
-    <div class="knowledge-item">
-      <span class="knowledge-item-icon">—</span>
-      <span class="knowledge-item-title">The founder-mode job search</span>
-      <span class="knowledge-item-summary">paulgraham.com &nbsp;·&nbsp; High volume, fast feedback loops, double down on what works</span>
-    </div>
-    <div class="knowledge-item">
-      <span class="knowledge-item-icon">—</span>
-      <span class="knowledge-item-title">How to deal with job search burnout</span>
-      <span class="knowledge-item-summary">lethain.com &nbsp;·&nbsp; Take Sundays off. 4 good applications beat 12 mediocre ones</span>
-    </div>
-    <div class="knowledge-item">
-      <span class="knowledge-item-icon">—</span>
-      <span class="knowledge-item-title">Cold outreach that actually works in 2026</span>
-      <span class="knowledge-item-summary">a16z.com &nbsp;·&nbsp; Specificity is everything. Generic messages are detectable instantly</span>
-    </div>
-  </div>
-</div>
-
-<!-- SCHEMA -->
-<div id="screen-schema" class="screen">
-  <div class="schema-legend">
-    <div class="schema-legend-item"><div class="schema-legend-dot" style="background:#D4A017"></div>Primary Key</div>
-    <div class="schema-legend-item"><div class="schema-legend-dot" style="background:#5B8DB8"></div>Foreign Key</div>
-    <div class="schema-legend-item"><div class="schema-legend-dot" style="background:#5AAF6E"></div>Enum</div>
-  </div>
-  <div class="schema-grid">
-    <div class="schema-table">
-      <div class="schema-table-header">companies</div>
-      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">name</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">website</span><span class="scol-type">text?</span></div>
-    </div>
-    <div class="schema-table">
-      <div class="schema-table-header">contacts</div>
-      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">name</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">company_id</span><span class="scol-type fk">→ companies</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">role</span><span class="scol-type">text?</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">source</span><span class="scol-type en">enum</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">stage</span><span class="scol-type en">enum</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">outreach_date</span><span class="scol-type">date</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text?</span></div>
-    </div>
-    <div class="schema-table">
-      <div class="schema-table-header">job_postings</div>
-      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">company_id</span><span class="scol-type fk">→ companies</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">title</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">link</span><span class="scol-type">text?</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">source</span><span class="scol-type en">enum</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">scraped_date</span><span class="scol-type">date</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">status</span><span class="scol-type en">enum</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">description</span><span class="scol-type">text?</span></div>
-    </div>
-    <div class="schema-table">
-      <div class="schema-table-header">interactions</div>
-      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">contact_id</span><span class="scol-type fk">→ contacts</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">date</span><span class="scol-type">date</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">direction</span><span class="scol-type en">enum</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text</span></div>
-    </div>
-    <div class="schema-table">
-      <div class="schema-table-header">content_posts</div>
-      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">posted_date</span><span class="scol-type">date</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">title</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">impressions</span><span class="scol-type">int</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">reactions</span><span class="scol-type">int</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">comments</span><span class="scol-type">int</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">reposts</span><span class="scol-type">int</span></div>
-    </div>
-  </div>
-</div>
-
 <script>
-  // Nav
-  document.querySelectorAll('nav button[data-screen]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById('screen-' + btn.dataset.screen).classList.add('active');
-    });
-  });
-
-  document.getElementById('retro-date').textContent =
-    'Week of ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : '';
+  const STREAM_URL = BASE + '/api/agents/jobsearch/stream';
 
   const input = document.getElementById('input');
   let mode = 'input';
@@ -301,9 +77,6 @@
   });
 
   document.getElementById('send-btn').addEventListener('click', send);
-
-  const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : '';
-  const STREAM_URL = BASE + '/api/agents/jobsearch/stream';
 
   const THINKING = [
     'Cogitating...', 'Ruminating...', 'Scheming...', 'Noodling...',
