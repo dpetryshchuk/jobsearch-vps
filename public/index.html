@@ -4,581 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>JOBSEARCH OS</title>
-  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #F7F6F2;
-      --surface: #EEECEA;
-      --surface-2: #E5E3DF;
-      --border: #D8D6D0;
-      --border-2: #C8C6C0;
-      --text: #1C1C18;
-      --text-dim: #8A8A82;
-      --text-mid: #5A5A54;
-      --accent: #3D7A00;
-      --accent-dim: rgba(61, 122, 0, 0.08);
-      --accent-mid: rgba(61, 122, 0, 0.15);
-      --red: #CC2222;
-      --amber: #8A6000;
-      --font: 'Martian Mono', monospace;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 13px;
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* NAV */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: 48px;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
-      z-index: 100;
-    }
-
-    .nav-logo {
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.15em;
-      color: var(--accent);
-      text-transform: uppercase;
-      margin-right: auto;
-    }
-
-    .nav-logo span { color: var(--text-dim); }
-
-    nav button {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      font-family: var(--font);
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      padding: 0 16px;
-      height: 48px;
-      transition: color 0.15s;
-      position: relative;
-    }
-
-    nav button:hover { color: var(--text); }
-    nav button.active { color: var(--accent); }
-    nav button.active::after {
-      content: '';
-      position: absolute;
-      bottom: 0; left: 16px; right: 16px;
-      height: 1px;
-      background: var(--accent);
-    }
-
-    /* SCREENS */
-    .screen { display: none; height: 100vh; padding-top: 48px; flex-direction: column; }
-    .screen.active { display: flex; }
-
-    /* ── CHAT ── */
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .messages::-webkit-scrollbar { width: 4px; }
-    .messages::-webkit-scrollbar-track { background: transparent; }
-    .messages::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
-
-    .message { display: flex; gap: 12px; max-width: 800px; }
-    .message.user { align-self: flex-end; flex-direction: row-reverse; }
-
-    .message-tag {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      padding-top: 3px;
-      min-width: 28px;
-      text-align: right;
-    }
-
-    .message.user .message-tag { text-align: left; }
-
-    .message-body {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      padding: 12px 16px;
-      font-size: 13px;
-      line-height: 1.7;
-      color: var(--text);
-      max-width: 640px;
-      white-space: pre-wrap;
-    }
-
-    .message.user .message-body {
-      background: var(--accent-dim);
-      border-color: rgba(184, 255, 53, 0.2);
-    }
-
-    .message.system .message-body {
-      background: transparent;
-      border-color: transparent;
-      color: var(--text-dim);
-      font-size: 11px;
-      padding: 0 0 0 4px;
-    }
-
-    .input-area {
-      border-top: 1px solid var(--border);
-      padding: 16px 24px;
-      background: var(--bg);
-    }
-
-    .input-row { display: flex; gap: 12px; align-items: flex-end; }
-
-    textarea {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 13px;
-      line-height: 1.6;
-      padding: 12px 16px;
-      resize: none;
-      min-height: 80px;
-      max-height: 240px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    textarea:focus { border-color: var(--border-2); }
-    textarea::placeholder { color: var(--text-dim); }
-
-    .send-btn {
-      background: var(--accent);
-      border: none;
-      border-radius: 2px;
-      color: #fff;
-      font-family: var(--font);
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      padding: 0 20px;
-      height: 44px;
-      transition: opacity 0.15s;
-    }
-
-    .send-btn:hover { opacity: 0.85; }
-
-    .input-hint {
-      font-size: 10px;
-      color: var(--text-dim);
-      margin-top: 8px;
-      letter-spacing: 0.05em;
-    }
-
-    .mode-toggle {
-      display: flex;
-      gap: 1px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-      align-self: flex-end;
-    }
-
-    .mode-btn {
-      background: var(--surface);
-      border: none;
-      color: var(--text-dim);
-      font-family: var(--font);
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      padding: 0 14px;
-      height: 44px;
-      transition: all 0.15s;
-    }
-
-    .mode-btn.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .mode-btn:not(.active):hover { color: var(--text); }
-
-    /* ── RETRO ── */
-    #screen-retro { overflow-y: auto; padding: 80px 24px 32px; }
-
-    .retro-header {
-      display: flex;
-      align-items: baseline;
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    .retro-title {
-      font-size: 11px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-    }
-
-    .retro-date { font-size: 11px; color: var(--accent); }
-
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--border);
-      margin-bottom: 32px;
-    }
-
-    .stat { background: var(--bg); padding: 20px 24px; }
-
-    .stat-label {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 32px;
-      font-weight: 300;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-
-    .stat-delta { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
-    .stat-delta.up { color: var(--accent); }
-    .stat-delta.down { color: var(--red); }
-
-    .section-label {
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .funnel-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 1px;
-      background: var(--border);
-      margin-bottom: 32px;
-    }
-
-    .funnel-cell { background: var(--bg); padding: 20px; }
-
-    .funnel-source {
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-bottom: 16px;
-    }
-
-    .funnel-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 2px 0;
-      font-size: 12px;
-    }
-
-    .funnel-stage { color: var(--text-mid); }
-    .funnel-count { color: var(--text); font-weight: 500; }
-
-    .funnel-bar {
-      height: 1px;
-      background: var(--border-2);
-      margin: 6px 0 10px;
-      position: relative;
-    }
-
-    .funnel-bar-fill {
-      position: absolute;
-      left: 0; top: 0;
-      height: 100%;
-      background: var(--accent);
-    }
-
-    .action-items { display: flex; flex-direction: column; gap: 1px; }
-
-    .action-item {
-      background: var(--surface);
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      font-size: 12px;
-    }
-
-    .action-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--amber);
-      flex-shrink: 0;
-    }
-
-    .action-dot.urgent { background: var(--red); }
-    .action-dot.ok { background: var(--accent); }
-
-    .action-name { color: var(--text); flex: 1; }
-    .action-company { color: var(--text-dim); min-width: 80px; }
-    .action-meta { color: var(--text-dim); font-size: 10px; }
-
-    /* ── PIPELINE ── */
-    #screen-pipeline { overflow-y: auto; padding: 80px 24px 32px; }
-
-    .pipeline-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-    }
-
-    .screen-title {
-      font-size: 11px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-    }
-
-    table { width: 100%; border-collapse: collapse; }
-
-    th {
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      text-align: left;
-      padding: 8px 16px;
-      border-bottom: 1px solid var(--border);
-      font-weight: 400;
-    }
-
-    td {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--text);
-    }
-
-    tr:hover td { background: var(--surface); }
-
-    .stage-badge {
-      font-size: 10px;
-      letter-spacing: 0.08em;
-      padding: 2px 8px;
-      border-radius: 2px;
-      text-transform: uppercase;
-    }
-
-    .stage-outreached { background: var(--surface-2); color: var(--text-mid); }
-    .stage-responded { background: rgba(255, 170, 0, 0.1); color: var(--amber); }
-    .stage-ongoing { background: var(--accent-mid); color: var(--accent); }
-    .stage-dead { background: transparent; color: var(--border-2); }
-
-    /* ── KNOWLEDGE ── */
-    #screen-knowledge { overflow-y: auto; padding: 80px 24px 32px; }
-
-    .knowledge-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .search-input {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 12px;
-      padding: 10px 16px;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-
-    .search-input:focus { border-color: var(--border-2); }
-    .search-input::placeholder { color: var(--text-dim); }
-
-    .add-btn {
-      background: var(--accent);
-      border: none;
-      border-radius: 2px;
-      color: #fff;
-      font-family: var(--font);
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      padding: 0 16px;
-      height: 38px;
-      transition: opacity 0.15s;
-    }
-
-    .add-btn:hover { opacity: 0.85; }
-
-    .knowledge-list { display: flex; flex-direction: column; gap: 1px; }
-
-    .knowledge-item {
-      background: var(--surface);
-      padding: 16px 20px;
-      cursor: pointer;
-      transition: background 0.1s;
-    }
-
-    .knowledge-item:hover { background: var(--surface-2); }
-
-    .knowledge-item-title { font-size: 13px; color: var(--text); margin-bottom: 4px; }
-
-    .knowledge-item-url {
-      font-size: 10px;
-      color: var(--text-dim);
-      margin-bottom: 8px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .knowledge-item-notes {
-      font-size: 11px;
-      color: var(--text-mid);
-      line-height: 1.6;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    /* ── TOOL CALLS ── */
-    .tool-calls { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-
-    .tool-call { border: 1px solid var(--border); border-radius: 2px; overflow: hidden; font-size: 11px; }
-
-    .tool-call-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 6px 10px; cursor: pointer;
-      background: var(--surface-2); user-select: none;
-    }
-    .tool-call-header:hover { background: var(--border); }
-
-    .tool-call-toggle { font-size: 9px; color: var(--text-dim); transition: transform 0.15s; display: inline-block; }
-    .tool-call-toggle.open { transform: rotate(90deg); }
-
-    .tool-call-chip {
-      font-size: 9px; font-weight: 500; letter-spacing: 0.08em;
-      padding: 1px 6px; border-radius: 2px;
-      background: rgba(138, 96, 0, 0.12); color: var(--amber);
-    }
-
-    .tool-call-body { padding: 8px 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
-
-    .tool-section-label {
-      font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--text-dim); margin-bottom: 3px;
-    }
-
-    .tool-json {
-      background: var(--bg); border: 1px solid var(--border); border-radius: 2px;
-      padding: 6px 8px; font-family: var(--font); font-size: 10px; color: var(--text-mid);
-      overflow-x: auto; white-space: pre; margin: 0; max-height: 140px; overflow-y: auto;
-    }
-
-    /* ── SCHEMA ── */
-    .schema-table {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .schema-table-header {
-      padding: 8px 12px;
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-      color: #D4A017;
-    }
-    .schema-col {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 12px;
-    }
-    .schema-col:hover { background: #ffffff05; }
-    .sbadge {
-      font-size: 8px;
-      font-weight: 500;
-      width: 20px;
-      flex-shrink: 0;
-      color: var(--text-dim);
-    }
-    .sbadge.pk { color: #D4A017; }
-    .sbadge.fk { color: #6B9DC8; }
-    .scol-name { font-size: 10px; color: var(--text-mid); flex: 1; }
-    .scol-type { font-size: 9px; color: var(--text-dim); }
-    .scol-type.fk { color: #6B9DC8; opacity: 0.7; }
-    .scol-type.en { color: #7BAF6E; }
-
-  </style>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
 <nav>
-  <div class="nav-logo">◆ <span>JOB</span>SEARCH</div>
+  <div class="nav-logo">
+    <span class="nav-logo-diamond"></span>
+    JOBSEARCH
+  </div>
   <button class="active" data-screen="chat">Chat</button>
   <button data-screen="retro">Retro</button>
   <button data-screen="pipeline">Pipeline</button>
   <button data-screen="knowledge">Notes</button>
-  <button data-screen="schema" style="margin-left:auto; color: var(--text-dim); font-size:11px;">Schema</button>
+  <span class="nav-spacer"></span>
+  <button data-screen="schema">Schema</button>
 </nav>
 
 <!-- CHAT -->
 <div id="screen-chat" class="screen active">
   <div class="messages" id="messages">
     <div class="message system">
-      <div class="message-body">Ready. Paste a job description, LinkedIn profile, YC message, or anything you want logged.</div>
+      <div class="message-tag">sys</div>
+      <div class="message-body">Ready. Paste a job description, LinkedIn profile, outreach message, or anything you want logged.</div>
     </div>
   </div>
   <div class="input-area">
     <div class="input-row">
+      <textarea id="input" placeholder="Paste anything — job post, LinkedIn profile, message you sent..."></textarea>
+      <button class="send-btn" id="send-btn">Send</button>
+    </div>
+    <div class="input-meta">
+      <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for newline &nbsp;·&nbsp; <span id="mode-hint-text">Agent logs to database</span></div>
       <div class="mode-toggle">
         <button class="mode-btn active" id="mode-input">Input</button>
         <button class="mode-btn" id="mode-rag">RAG</button>
       </div>
-      <textarea id="input" placeholder="Paste anything — job post, LinkedIn profile, message you sent, application notes..."></textarea>
-      <button class="send-btn" id="send-btn">Send</button>
     </div>
-    <div class="input-hint">⌘+Enter to send · <span id="mode-hint">Agent logs to database</span></div>
   </div>
 </div>
 
@@ -713,55 +178,45 @@
   </table>
 </div>
 
-<!-- KNOWLEDGE -->
+<!-- NOTES (file browser) -->
 <div id="screen-knowledge" class="screen">
   <div class="knowledge-header">
-    <input class="search-input" placeholder="Search by topic — burnout, cold outreach, system design..." />
+    <input class="search-input" placeholder="Search notes..." />
     <button class="add-btn">+ Add</button>
   </div>
   <div class="knowledge-list">
     <div class="knowledge-item">
-      <div class="knowledge-item-title">The founder-mode job search</div>
-      <div class="knowledge-item-url">paulgraham.com/foundermode.html</div>
-      <div class="knowledge-item-notes">Treat the job search like a startup. High volume, fast feedback loops, double down on what works. Don't optimize prematurely.</div>
+      <span class="knowledge-item-icon">—</span>
+      <span class="knowledge-item-title">The founder-mode job search</span>
+      <span class="knowledge-item-summary">paulgraham.com &nbsp;·&nbsp; High volume, fast feedback loops, double down on what works</span>
     </div>
     <div class="knowledge-item">
-      <div class="knowledge-item-title">How to deal with job search burnout</div>
-      <div class="knowledge-item-url">lethain.com/job-search-burnout</div>
-      <div class="knowledge-item-notes">Take Sundays off. Quality of outreach degrades badly when depleted. 4 good applications beat 12 mediocre ones every time.</div>
+      <span class="knowledge-item-icon">—</span>
+      <span class="knowledge-item-title">How to deal with job search burnout</span>
+      <span class="knowledge-item-summary">lethain.com &nbsp;·&nbsp; Take Sundays off. 4 good applications beat 12 mediocre ones</span>
     </div>
     <div class="knowledge-item">
-      <div class="knowledge-item-title">Cold outreach that actually works in 2026</div>
-      <div class="knowledge-item-url">a16z.com/cold-outreach</div>
-      <div class="knowledge-item-notes">Specificity is everything. Reference one concrete thing about the company. Generic messages are detectable instantly.</div>
+      <span class="knowledge-item-icon">—</span>
+      <span class="knowledge-item-title">Cold outreach that actually works in 2026</span>
+      <span class="knowledge-item-summary">a16z.com &nbsp;·&nbsp; Specificity is everything. Generic messages are detectable instantly</span>
     </div>
   </div>
 </div>
 
-<div id="screen-schema" class="screen" style="overflow-y:auto; padding: 80px 24px 32px;">
-  <div class="screen-title">Schema</div>
-
-  <div style="display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap;">
-    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);font-family:var(--font);">
-      <div style="width:7px;height:7px;border-radius:50%;background:#D4A017"></div>PRIMARY KEY
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);font-family:var(--font);">
-      <div style="width:7px;height:7px;border-radius:50%;background:#6B9DC8"></div>FOREIGN KEY
-    </div>
-    <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text-dim);font-family:var(--font);">
-      <div style="width:7px;height:7px;border-radius:50%;background:#7BAF6E"></div>ENUM
-    </div>
+<!-- SCHEMA -->
+<div id="screen-schema" class="screen">
+  <div class="schema-legend">
+    <div class="schema-legend-item"><div class="schema-legend-dot" style="background:#D4A017"></div>Primary Key</div>
+    <div class="schema-legend-item"><div class="schema-legend-dot" style="background:#5B8DB8"></div>Foreign Key</div>
+    <div class="schema-legend-item"><div class="schema-legend-dot" style="background:#5AAF6E"></div>Enum</div>
   </div>
-
-  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:12px;">
-
+  <div class="schema-grid">
     <div class="schema-table">
       <div class="schema-table-header">companies</div>
       <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">name</span><span class="scol-type">text</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">website</span><span class="scol-type">text?</span></div>
     </div>
-
     <div class="schema-table">
       <div class="schema-table-header">contacts</div>
       <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
@@ -772,10 +227,7 @@
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">stage</span><span class="scol-type en">enum</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">outreach_date</span><span class="scol-type">date</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text?</span></div>
-      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">event_id</span><span class="scol-type fk">→ events?</span></div>
-      <div class="schema-col"><span class="sbadge fk">FK</span><span class="scol-name">content_post_id</span><span class="scol-type fk">→ content_posts?</span></div>
     </div>
-
     <div class="schema-table">
       <div class="schema-table-header">job_postings</div>
       <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
@@ -786,9 +238,7 @@
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">scraped_date</span><span class="scol-type">date</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">status</span><span class="scol-type en">enum</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">description</span><span class="scol-type">text?</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">resume_path</span><span class="scol-type">text?</span></div>
     </div>
-
     <div class="schema-table">
       <div class="schema-table-header">interactions</div>
       <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
@@ -797,15 +247,6 @@
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">direction</span><span class="scol-type en">enum</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text</span></div>
     </div>
-
-    <div class="schema-table">
-      <div class="schema-table-header">events</div>
-      <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">name</span><span class="scol-type">text</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">date</span><span class="scol-type">date</span></div>
-      <div class="schema-col"><span class="sbadge"></span><span class="scol-name">notes</span><span class="scol-type">text?</span></div>
-    </div>
-
     <div class="schema-table">
       <div class="schema-table-header">content_posts</div>
       <div class="schema-col"><span class="sbadge pk">PK</span><span class="scol-name">id</span><span class="scol-type">text</span></div>
@@ -816,12 +257,12 @@
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">comments</span><span class="scol-type">int</span></div>
       <div class="schema-col"><span class="sbadge"></span><span class="scol-name">reposts</span><span class="scol-type">int</span></div>
     </div>
-
   </div>
 </div>
 
 <script>
-  document.querySelectorAll('nav button').forEach(btn => {
+  // Nav
+  document.querySelectorAll('nav button[data-screen]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -843,29 +284,34 @@
     mode = m;
     document.getElementById('mode-input').classList.toggle('active', m === 'input');
     document.getElementById('mode-rag').classList.toggle('active', m === 'rag');
-    const hint = document.getElementById('mode-hint');
-    const placeholder = document.getElementById('input');
-    if (m === 'input') {
-      hint.textContent = 'Agent logs to database';
-      placeholder.placeholder = 'Paste anything — job post, LinkedIn profile, message you sent, application notes...';
-    } else {
-      hint.textContent = 'Semantic search across saved knowledge';
-      placeholder.placeholder = 'Search your notes — try "burnout", "cold outreach", "system design"...';
-    }
+    document.getElementById('mode-hint-text').textContent =
+      m === 'input' ? 'Agent logs to database' : 'Semantic search across notes';
+    input.placeholder = m === 'input'
+      ? 'Paste anything — job post, LinkedIn profile, message you sent...'
+      : 'Search your notes — burnout, cold outreach, system design...';
   }
 
   input.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); send(); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   });
 
   input.addEventListener('input', function() {
     this.style.height = 'auto';
-    this.style.height = Math.min(this.scrollHeight, 240) + 'px';
+    this.style.height = Math.min(this.scrollHeight, 200) + 'px';
   });
 
   document.getElementById('send-btn').addEventListener('click', send);
 
-  const AGENT_URL = '/api/agents/jobsearch/generate';
+  const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : '';
+  const STREAM_URL = BASE + '/api/agents/jobsearch/stream';
+
+  const THINKING = [
+    'Cogitating...', 'Ruminating...', 'Scheming...', 'Noodling...',
+    'Percolating...', 'Concocting...', 'Finagling...', 'Wrangling...',
+    'Deliberating...', 'Marinating...', 'Stewing...', 'Palavering...',
+    'Machinating...', 'Puttering...', 'Rummaging...', 'Bamboozling...',
+    'Discombobulating...', 'Festering...', 'Gallivanting...', 'Hullaballooing...',
+  ];
 
   async function send() {
     const text = input.value.trim();
@@ -876,55 +322,103 @@
 
     if (mode === 'rag') { addMessage('agent', 'RAG not yet wired.'); return; }
 
-    const bubble = addMessage('agent', '...');
+    const bubble = addMessage('agent', '');
+    const body = bubble.querySelector('.message-body');
+    const msgContainer = document.getElementById('messages');
+
+    const thinkingEl = document.createElement('span');
+    thinkingEl.className = 'thinking-word';
+    thinkingEl.textContent = THINKING[Math.floor(Math.random() * THINKING.length)];
+    body.appendChild(thinkingEl);
+    let idx = 0;
+    const ticker = setInterval(() => {
+      idx = (idx + 1) % THINKING.length;
+      thinkingEl.textContent = THINKING[idx];
+    }, 600);
 
     try {
-      const res = await fetch(AGENT_URL, {
+      const res = await fetch(STREAM_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [{ role: 'user', content: text }] }),
       });
+
+      clearInterval(ticker);
+      thinkingEl.remove();
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      renderAgentResponse(bubble, data);
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'agent-text';
+      body.appendChild(textDiv);
+
+      const toolCallsDiv = document.createElement('div');
+      toolCallsDiv.className = 'tool-calls';
+      body.appendChild(toolCallsDiv);
+
+      const cardMap = {};
+      let textContent = '';
+      let buffer = '';
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith('data: ')) continue;
+          const trimmed = line.slice(6).trim();
+          if (!trimmed || trimmed === '[DONE]') continue;
+          try {
+            const chunk = JSON.parse(trimmed);
+
+            if (chunk.type === 'text-delta' && chunk.payload?.text) {
+              textContent += chunk.payload.text;
+              textDiv.innerHTML = marked.parse(textContent);
+              msgContainer.scrollTop = msgContainer.scrollHeight;
+            }
+
+            if (chunk.type === 'tool-call' && chunk.payload) {
+              const p = chunk.payload;
+              const card = buildToolCallCard(p.toolName, p.args, null);
+              cardMap[p.toolCallId] = card;
+              toolCallsDiv.appendChild(card);
+              msgContainer.scrollTop = msgContainer.scrollHeight;
+            }
+
+            if (chunk.type === 'tool-result' && chunk.payload) {
+              const p = chunk.payload;
+              const card = cardMap[p.toolCallId];
+              if (card) {
+                card.querySelector('.tool-result-pre').textContent =
+                  JSON.stringify(p.result, null, 2);
+              }
+            }
+          } catch (e) { /* skip bad chunks */ }
+        }
+      }
+
+      if (toolCallsDiv.children.length === 0) toolCallsDiv.remove();
+
     } catch (err) {
-      const body = bubble.querySelector('.message-body');
+      clearInterval(ticker);
+      thinkingEl.remove();
       body.textContent = `Error: ${err.message}`;
       body.style.color = 'var(--red)';
     }
   }
 
-  function renderAgentResponse(bubble, data) {
-    const body = bubble.querySelector('.message-body');
-    body.innerHTML = '';
-
-    // Tool calls from steps
-    const steps = data.steps ?? [];
-    const toolCallsDiv = document.createElement('div');
-    toolCallsDiv.className = 'tool-calls';
-
-    steps.forEach(step => {
-      (step.toolCalls ?? []).forEach(tc => {
-        const result = (step.toolResults ?? []).find(r => r.toolCallId === tc.toolCallId);
-        toolCallsDiv.appendChild(buildToolCallCard(tc, result));
-      });
-    });
-
-    if (toolCallsDiv.children.length > 0) body.appendChild(toolCallsDiv);
-
-    // Final text
-    const textNode = document.createElement('span');
-    textNode.textContent = data.text ?? '';
-    body.appendChild(textNode);
-  }
-
-  function buildToolCallCard(tc, result) {
+  function buildToolCallCard(toolName, args, result) {
     const card = document.createElement('div');
     card.className = 'tool-call';
 
     const header = document.createElement('div');
     header.className = 'tool-call-header';
-    header.innerHTML = `<span class="tool-call-toggle">▶</span><span class="tool-call-chip">${escHtml(tc.toolName)}</span>`;
+    header.innerHTML = `<span class="tool-call-toggle">▶</span><span class="tool-call-chip">${escHtml(toolName ?? '?')}</span>`;
 
     const bodyEl = document.createElement('div');
     bodyEl.className = 'tool-call-body';
@@ -932,11 +426,11 @@
     bodyEl.innerHTML = `
       <div>
         <div class="tool-section-label">Args</div>
-        <pre class="tool-json">${escHtml(JSON.stringify(tc.args, null, 2))}</pre>
+        <pre class="tool-json">${escHtml(JSON.stringify(args ?? null, null, 2))}</pre>
       </div>
       <div>
         <div class="tool-section-label">Result</div>
-        <pre class="tool-json">${escHtml(JSON.stringify(result?.result ?? null, null, 2))}</pre>
+        <pre class="tool-json tool-result-pre">${escHtml(JSON.stringify(result ?? null, null, 2))}</pre>
       </div>`;
 
     header.addEventListener('click', () => {
@@ -953,8 +447,9 @@
   function addMessage(role, text) {
     const messages = document.getElementById('messages');
     const div = document.createElement('div');
-    div.className = 'message' + (role === 'user' ? ' user' : '');
-    div.innerHTML = `<div class="message-tag">${role === 'user' ? 'you' : 'os'}</div><div class="message-body">${escHtml(text)}</div>`;
+    div.className = 'message' + (role === 'user' ? ' user' : role === 'system' ? ' system' : '');
+    const tag = role === 'user' ? 'you' : role === 'system' ? 'sys' : 'os';
+    div.innerHTML = `<div class="message-tag">${tag}</div><div class="message-body">${escHtml(text)}</div>`;
     messages.appendChild(div);
     messages.scrollTop = messages.scrollHeight;
     return div;
