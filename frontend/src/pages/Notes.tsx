@@ -4,14 +4,13 @@ import { cn } from '@/lib/utils'
 
 const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : ''
 
-const CATEGORIES = ['all', 'article', 'note', 'application'] as const
+const CATEGORIES = ['all', 'article', 'note'] as const
 type CategoryFilter = typeof CATEGORIES[number]
 
 const CATEGORY_LABELS: Record<string, string> = {
   all: 'All',
   article: 'Articles',
   note: 'Notes',
-  application: 'Application',
 }
 
 interface Note {
@@ -33,7 +32,6 @@ function CategoryBadge({ category }: { category: string }) {
       'text-[9px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded border',
       category === 'article' && 'border-blue-500/30 text-blue-400',
       category === 'note' && 'border-border text-muted-foreground',
-      category === 'application' && 'border-amber-500/30 text-amber-400',
     )}>
       {category}
     </span>
@@ -178,7 +176,7 @@ export default function Notes() {
       {showAdd && (
         <div className="border-b border-border bg-muted/10 px-4 py-4 flex flex-col gap-3 shrink-0">
           <div className="flex gap-2">
-            {(['article', 'note', 'application'] as const).map(cat => (
+            {(['article', 'note'] as const).map(cat => (
               <button
                 key={cat}
                 onClick={() => setFCategory(cat)}
