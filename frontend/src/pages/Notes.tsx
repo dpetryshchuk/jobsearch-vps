@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, ExternalLink, Plus, Search, Send, Sparkles, X } from 'lucide-react'
+import { ChevronDown, ExternalLink, Pencil, Plus, Search, Send, Sparkles, Trash2, X } from 'lucide-react'
 import { marked } from 'marked'
 import { cn } from '@/lib/utils'
 
@@ -47,25 +47,132 @@ function CategoryBadge({ category }: { category: string }) {
   )
 }
 
-function NoteRow({ note }: { note: Note }) {
+function NoteRow({ note, onUpdate, onDelete }: {
+  note: Note
+  onUpdate: (n: Note) => void
+  onDelete: (id: string) => void
+}) {
   const [expanded, setExpanded] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [eCategory, setECategory] = useState(note.category)
+  const [eTitle, setETitle] = useState(note.title ?? '')
+  const [eUrl, setEUrl] = useState(note.url ?? '')
+  const [eContent, setEContent] = useState(note.content ?? '')
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setECategory(note.category)
+    setETitle(note.title ?? '')
+    setEUrl(note.url ?? '')
+    setEContent(note.content ?? '')
+    setEditing(true)
+    setExpanded(false)
+  }
+
+  const saveEdit = async () => {
+    setSaving(true)
+    try {
+      const r = await fetch(`${BASE}/data/notes/${note.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: eCategory,
+          title: eTitle.trim() || null,
+          url: eUrl.trim() || null,
+          content: eContent.trim() || null,
+        }),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      onUpdate(await r.json())
+      setEditing(false)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('Delete this note?')) return
+    await fetch(`${BASE}/data/notes/${note.id}`, { method: 'DELETE' })
+    onDelete(note.id)
+  }
+
+  if (editing) {
+    return (
+      <div className="border-b border-border bg-muted/10 px-4 py-4 flex flex-col gap-3">
+        <div className="flex gap-2">
+          {(['article', 'note'] as const).map(cat => (
+            <button
+              key={cat}
+              onClick={() => setECategory(cat)}
+              className={cn(
+                'px-2.5 py-1 text-xs rounded-md border transition-colors',
+                eCategory === cat ? 'border-foreground text-foreground' : 'border-border text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {CATEGORY_LABELS[cat]}
+            </button>
+          ))}
+        </div>
+        <input
+          value={eTitle}
+          onChange={e => setETitle(e.target.value)}
+          placeholder="Title (optional)"
+          className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring/30"
+        />
+        <input
+          value={eUrl}
+          onChange={e => setEUrl(e.target.value)}
+          placeholder="URL (optional)"
+          type="url"
+          className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring/30"
+        />
+        <textarea
+          value={eContent}
+          onChange={e => setEContent(e.target.value)}
+          placeholder="Content..."
+          rows={4}
+          className="w-full bg-background border border-border rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-ring/30 resize-none"
+        />
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => setEditing(false)}
+            className="px-3 py-1.5 text-xs text-muted-foreground border border-border rounded-md hover:text-foreground transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={saveEdit}
+            disabled={saving}
+            className="px-4 py-1.5 text-xs font-medium bg-foreground text-background rounded-md hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const hasContent = !!note.content
   const title = noteTitle(note)
 
   return (
-    <div className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-      <button
-        onClick={() => hasContent && setExpanded(v => !v)}
-        className={cn('w-full text-left px-4 py-3 flex items-start gap-3', !hasContent && 'cursor-default')}
-      >
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
+    <div className="group border-b border-border/50 hover:bg-muted/20 transition-colors">
+      <div className="px-4 py-3 flex items-start gap-3">
+        <button
+          onClick={() => hasContent && setExpanded(v => !v)}
+          className={cn('flex-1 min-w-0 flex flex-col gap-1 text-left', !hasContent && 'cursor-default')}
+        >
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium truncate">{title}</span>
             <CategoryBadge category={note.category} />
           </div>
           <span className="text-xs text-muted-foreground">{fmtDate(note.created_at)}</span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 mt-0.5">
+        </button>
+        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
           {note.url && (
             <a
               href={note.url}
@@ -77,11 +184,25 @@ function NoteRow({ note }: { note: Note }) {
               <ExternalLink size={13} />
             </a>
           )}
+          <button
+            onClick={startEdit}
+            className="opacity-0 group-hover:opacity-100 p-1 rounded text-muted-foreground hover:text-foreground transition-all"
+          >
+            <Pencil size={12} />
+          </button>
+          <button
+            onClick={handleDelete}
+            className="opacity-0 group-hover:opacity-100 p-1 rounded text-muted-foreground hover:text-destructive transition-all"
+          >
+            <Trash2 size={12} />
+          </button>
           {hasContent && (
-            <ChevronDown size={13} className={cn('text-muted-foreground transition-transform', expanded && 'rotate-180')} />
+            <button onClick={() => setExpanded(v => !v)}>
+              <ChevronDown size={13} className={cn('text-muted-foreground transition-transform', expanded && 'rotate-180')} />
+            </button>
           )}
         </div>
-      </button>
+      </div>
       {expanded && note.content && (
         <div className="px-4 pb-4">
           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{note.content}</p>
@@ -390,7 +511,14 @@ export default function Notes() {
             </p>
           </div>
         )}
-        {filtered.map(note => <NoteRow key={note.id} note={note} />)}
+        {filtered.map(note => (
+          <NoteRow
+            key={note.id}
+            note={note}
+            onUpdate={updated => setNotes(prev => prev.map(n => n.id === updated.id ? updated : n))}
+            onDelete={id => setNotes(prev => prev.filter(n => n.id !== id))}
+          />
+        ))}
       </div>
     </div>
   )

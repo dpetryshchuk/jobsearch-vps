@@ -197,6 +197,22 @@ export async function createNote(data: {
   return result.rows[0]
 }
 
+export async function updateNote(id: string, data: {
+  category: string
+  title: string | null
+  url: string | null
+  content: string | null
+}): Promise<NoteRow | null> {
+  const result = await pool.query(`
+    UPDATE notes SET category=$1, title=$2, url=$3, content=$4 WHERE id=$5 RETURNING ${NOTE_COLUMNS}
+  `, [data.category, data.title, data.url, data.content, id])
+  return result.rows[0] ?? null
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  await pool.query('DELETE FROM notes WHERE id = $1', [id])
+}
+
 export interface ContentPostRow {
   id: string
   posted_date: string

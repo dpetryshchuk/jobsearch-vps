@@ -9,6 +9,7 @@ import { jobsearchAgent } from './agents/jobsearch'
 import { pool } from './pool'
 import {
   createNote,
+  deleteNote,
   getApplications,
   getContentPosts,
   getLeads,
@@ -16,6 +17,7 @@ import {
   getPipeline,
   getRetro,
   searchNotes,
+  updateNote,
 } from './queries'
 
 const UPLOADS_DIR = '/home/dima/jobsearch/uploads'
@@ -114,6 +116,31 @@ export const mastra = new Mastra({
             content: body.content ?? null,
           })
           return c.json(note, 201)
+        },
+      },
+      {
+        path: '/data/notes/:id',
+        method: 'PATCH' as const,
+        handler: async (c: any) => {
+          const id = c.req.param('id')
+          const body = await c.req.json()
+          const note = await updateNote(id, {
+            category: body.category ?? 'note',
+            title: body.title ?? null,
+            url: body.url ?? null,
+            content: body.content ?? null,
+          })
+          if (!note) return c.json({ error: 'Not found' }, 404)
+          return c.json(note)
+        },
+      },
+      {
+        path: '/data/notes/:id',
+        method: 'DELETE' as const,
+        handler: async (c: any) => {
+          const id = c.req.param('id')
+          await deleteNote(id)
+          return c.json({ ok: true })
         },
       },
     ],

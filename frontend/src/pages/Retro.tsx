@@ -12,7 +12,6 @@ interface RetroData {
     total_contacts: string
   }
   bySource: { source: string; stage: string; n: string }[]
-  needsAction: { name: string; company: string | null; stage: string; last_contact: string | null }[]
   alltime: {
     sent_total: string
     received_total: string
@@ -90,13 +89,6 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
       {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
     </div>
   )
-}
-
-function relativeDate(dateStr: string): string {
-  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
-  if (days === 0) return 'today'
-  if (days === 1) return 'yesterday'
-  return `${days} days ago`
 }
 
 function fmtDate(dateStr: string): string {
@@ -180,19 +172,21 @@ export default function Retro() {
                   { label: 'Ongoing', count: ongoing, width: pct(ongoing, outreached) },
                 ]
                 return (
-                  <div key={source} className="border border-border rounded-lg p-3">
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">{source}</p>
-                    {rows.map(row => (
-                      <div key={row.label}>
-                        <div className="flex justify-between text-xs mb-0.5">
-                          <span className="text-muted-foreground">{row.label}</span>
-                          <span className="font-medium">{row.count}</span>
+                  <div key={source} className="border border-border rounded-lg p-4">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-4">{source}</p>
+                    <div className="flex flex-col gap-3">
+                      {rows.map(row => (
+                        <div key={row.label} className="flex flex-col gap-1.5 min-w-0">
+                          <div className="flex justify-between items-baseline text-xs">
+                            <span className="text-muted-foreground">{row.label}</span>
+                            <span className="font-semibold tabular-nums">{row.count}</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                            <div className="h-full bg-foreground/60" style={{ width: `${Math.min(row.width, 100)}%` }} />
+                          </div>
                         </div>
-                        <div className="h-px bg-border mb-2 relative">
-                          <div className="absolute inset-y-0 left-0 bg-foreground/30" style={{ width: `${row.width}%` }} />
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )
               })}
@@ -200,28 +194,6 @@ export default function Retro() {
           </>
         )}
 
-        <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3 pb-2 border-b border-border">
-          Needs action
-        </p>
-        {data.needsAction.length === 0 ? (
-          <p className="text-sm text-muted-foreground">All caught up.</p>
-        ) : (
-          <div className="flex flex-col gap-1">
-            {data.needsAction.map((c, i) => (
-              <div key={`${c.name}-${i}`} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-muted/30 text-sm">
-                <div className={cn(
-                  'w-1.5 h-1.5 rounded-full shrink-0',
-                  c.stage === 'Ongoing' ? 'bg-destructive' : 'bg-muted-foreground',
-                )} />
-                <span className="font-medium flex-1">{c.name}</span>
-                <span className="text-muted-foreground text-xs">{c.company ?? '—'}</span>
-                <span className="text-muted-foreground text-xs">
-                  {c.last_contact ? `Last: ${relativeDate(c.last_contact)}` : 'No contact'} — follow up
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
       {/* All time */}
