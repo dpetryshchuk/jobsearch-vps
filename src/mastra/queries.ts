@@ -140,6 +140,39 @@ export async function getApplications(): Promise<ApplicationRow[]> {
   return result.rows
 }
 
+export interface NoteRow {
+  id: string
+  category: string
+  title: string | null
+  url: string | null
+  content: string | null
+  created_at: string
+}
+
+export async function getNotes(): Promise<NoteRow[]> {
+  const result = await pool.query(`
+    SELECT id, category, title, url, content, created_at
+    FROM notes
+    ORDER BY created_at DESC
+  `)
+  return result.rows
+}
+
+export async function createNote(data: {
+  id: string
+  category: string
+  title: string | null
+  url: string | null
+  content: string | null
+}): Promise<NoteRow> {
+  const result = await pool.query(`
+    INSERT INTO notes (id, category, title, url, content)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id, category, title, url, content, created_at
+  `, [data.id, data.category, data.title, data.url, data.content])
+  return result.rows[0]
+}
+
 export interface ContentPostRow {
   id: string
   posted_date: string

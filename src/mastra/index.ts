@@ -3,7 +3,8 @@ import { PostgresStore } from '@mastra/pg'
 import { Observability } from '@mastra/observability'
 import { LangfuseExporter } from '@mastra/langfuse'
 import { jobsearchAgent } from './agents/jobsearch'
-import { getPipeline, getRetro, getContentPosts, getLeads, getApplications } from './queries'
+import { getPipeline, getRetro, getContentPosts, getLeads, getApplications, getNotes, createNote } from './queries'
+import { randomBytes } from 'crypto'
 
 const storage = new PostgresStore({
   id: 'pg-storage',
@@ -74,6 +75,26 @@ export const mastra = new Mastra({
         path: '/data/applications',
         method: 'GET' as const,
         handler: async (c: any) => c.json(await getApplications()),
+      },
+      {
+        path: '/data/notes',
+        method: 'GET' as const,
+        handler: async (c: any) => c.json(await getNotes()),
+      },
+      {
+        path: '/data/notes',
+        method: 'POST' as const,
+        handler: async (c: any) => {
+          const body = await c.req.json()
+          const note = await createNote({
+            id: randomBytes(8).toString('hex'),
+            category: body.category ?? 'note',
+            title: body.title ?? null,
+            url: body.url ?? null,
+            content: body.content ?? null,
+          })
+          return c.json(note, 201)
+        },
       },
     ],
   },

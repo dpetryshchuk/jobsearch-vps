@@ -108,9 +108,7 @@ function MessageBubble({ msg }: { msg: Message }) {
 }
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 'sys0', role: 'system', text: 'Ready. Paste a job description, LinkedIn profile, outreach message, or anything you want logged.' },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [mode, setMode] = useState<Mode>('input')
   const [streaming, setStreaming] = useState(false)
