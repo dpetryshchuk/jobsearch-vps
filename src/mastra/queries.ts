@@ -158,29 +158,27 @@ export interface NoteRow {
   created_at: string
 }
 
+const NOTE_COLUMNS = 'id, category, title, url, content, created_at'
+const NOTE_TSV = `to_tsvector('english',
+  COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, ''))`
+
 export async function getNotes(): Promise<NoteRow[]> {
   const result = await pool.query(`
-    SELECT id, category, title, url, content, created_at
+    SELECT ${NOTE_COLUMNS}
     FROM notes
     ORDER BY created_at DESC
   `)
   return result.rows
 }
 
-export async function searchNotes(q: string): Promise<NoteRow[]> {
+export async function searchNotes(q: string, limit = 15): Promise<NoteRow[]> {
   const result = await pool.query(`
-    SELECT id, category, title, url, content, created_at
+    SELECT ${NOTE_COLUMNS}
     FROM notes
-    WHERE to_tsvector('english',
-        COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, ''))
-      @@ plainto_tsquery('english', $1)
-    ORDER BY ts_rank(
-      to_tsvector('english',
-        COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, '')),
-      plainto_tsquery('english', $1)
-    ) DESC
-    LIMIT 15
-  `, [q])
+    WHERE ${NOTE_TSV} @@ plainto_tsquery('english', $1)
+    ORDER BY ts_rank(${NOTE_TSV}, plainto_tsquery('english', $1)) DESC
+    LIMIT $2
+  `, [q, limit])
   return result.rows
 }
 
@@ -194,7 +192,7 @@ export async function createNote(data: {
   const result = await pool.query(`
     INSERT INTO notes (id, category, title, url, content)
     VALUES ($1, $2, $3, $4, $5)
-    RETURNING id, category, title, url, content, created_at
+    RETURNING ${NOTE_COLUMNS}
   `, [data.id, data.category, data.title, data.url, data.content])
   return result.rows[0]
 }

@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
-import { Plus, X, ExternalLink, Search, ChevronDown, Sparkles, Send } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useEffect, useRef, useState } from 'react'
+import { ChevronDown, ExternalLink, Plus, Search, Send, Sparkles, X } from 'lucide-react'
 import { marked } from 'marked'
+import { cn } from '@/lib/utils'
 
 const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : ''
+const STREAM_URL = BASE + '/api/agents/jobsearch/stream'
 
 const CATEGORIES = ['all', 'article', 'note'] as const
 type CategoryFilter = typeof CATEGORIES[number]
@@ -23,8 +24,15 @@ interface Note {
   created_at: string
 }
 
-function fmtDate(s: string) {
+function fmtDate(s: string): string {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function noteTitle(note: Note): string {
+  if (note.title) return note.title
+  if (note.url) return note.url
+  if (note.content) return note.content.slice(0, 60) + '...'
+  return 'Untitled'
 }
 
 function CategoryBadge({ category }: { category: string }) {
@@ -42,7 +50,7 @@ function CategoryBadge({ category }: { category: string }) {
 function NoteRow({ note }: { note: Note }) {
   const [expanded, setExpanded] = useState(false)
   const hasContent = !!note.content
-  const title = note.title || note.url || note.content?.slice(0, 60) + '...' || 'Untitled'
+  const title = noteTitle(note)
 
   return (
     <div className="border-b border-border/50 hover:bg-muted/20 transition-colors">
@@ -82,8 +90,6 @@ function NoteRow({ note }: { note: Note }) {
     </div>
   )
 }
-
-const STREAM_URL = BASE + '/api/agents/jobsearch/stream'
 
 function AskPanel({ onClose }: { onClose: () => void }) {
   const [input, setInput] = useState('')
@@ -200,22 +206,32 @@ export default function Notes() {
       .finally(() => setLoading(false))
   }, [])
 
+  const q = query.toLowerCase()
   const filtered = notes.filter(n => {
-    const matchCat = filter === 'all' || n.category === filter
-    const q = query.toLowerCase()
-    const matchQ = !q ||
-      (n.title ?? '').toLowerCase().includes(q) ||
-      (n.content ?? '').toLowerCase().includes(q) ||
-      (n.url ?? '').toLowerCase().includes(q)
-    return matchCat && matchQ
+    if (filter !== 'all' && n.category !== filter) return false
+    if (!q) return true
+    return (n.title ?? '').toLowerCase().includes(q)
+      || (n.content ?? '').toLowerCase().includes(q)
+      || (n.url ?? '').toLowerCase().includes(q)
   })
 
-  const resetForm = () => {
+  function resetForm(): void {
     setFTitle('')
     setFUrl('')
     setFContent('')
     setFCategory('article')
     setSaveError(null)
+  }
+
+  function toggleAsk(): void {
+    setShowAsk(v => !v)
+    if (!showAsk) setShowAdd(false)
+  }
+
+  function toggleAdd(): void {
+    if (showAdd) resetForm()
+    setShowAdd(v => !v)
+    if (!showAdd) setShowAsk(false)
   }
 
   const save = async () => {
@@ -261,7 +277,7 @@ export default function Notes() {
         />
         <div className="flex items-center gap-1.5 shrink-0">
           <button
-            onClick={() => { setShowAsk(v => !v); if (!showAsk) setShowAdd(false) }}
+            onClick={toggleAsk}
             className={cn(
               'flex items-center gap-1.5 text-xs font-medium border rounded-md px-2.5 py-1.5 transition-colors',
               showAsk
@@ -272,7 +288,7 @@ export default function Notes() {
             <Sparkles size={12} /> Ask
           </button>
           <button
-            onClick={() => { setShowAdd(v => !v); if (showAdd) resetForm(); if (!showAdd) setShowAsk(false) }}
+            onClick={toggleAdd}
             className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border border-border rounded-md px-2.5 py-1.5 hover:text-foreground hover:border-foreground/30 transition-colors"
           >
             {showAdd ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add</>}

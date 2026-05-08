@@ -25,6 +25,18 @@ interface RetroData {
 
 const DAY_NAMES = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
+function dayCellColor(isFuture: boolean, count: number): string {
+  if (isFuture) return 'text-muted-foreground/20'
+  if (count > 0) return 'text-foreground'
+  return 'text-muted-foreground/30'
+}
+
+function dayCellLabel(isFuture: boolean, count: number): string | number {
+  if (isFuture) return '—'
+  if (count > 0) return count
+  return '·'
+}
+
 function CalendarStrip({ daily }: { daily: { date: string; direction: string; n: string }[] }) {
   const today = new Date()
   const dow = today.getDay()
@@ -39,7 +51,7 @@ function CalendarStrip({ daily }: { daily: { date: string; direction: string; n:
 
   const countMap: Record<string, number> = {}
   daily.forEach(r => {
-    countMap[r.date] = (countMap[r.date] || 0) + parseInt(r.n)
+    countMap[r.date] = (countMap[r.date] ?? 0) + parseInt(r.n)
   })
 
   const todayStr = today.toISOString().slice(0, 10)
@@ -48,7 +60,7 @@ function CalendarStrip({ daily }: { daily: { date: string; direction: string; n:
     <div className="flex gap-1.5 mb-6">
       {days.map((d, i) => {
         const dateStr = d.toISOString().slice(0, 10)
-        const count = countMap[dateStr] || 0
+        const count = countMap[dateStr] ?? 0
         const isToday = dateStr === todayStr
         const isFuture = dateStr > todayStr
         return (
@@ -59,11 +71,8 @@ function CalendarStrip({ daily }: { daily: { date: string; direction: string; n:
             <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
               {DAY_NAMES[i]}
             </span>
-            <span className={cn(
-              'text-sm font-semibold tabular-nums',
-              isFuture ? 'text-muted-foreground/20' : count > 0 ? 'text-foreground' : 'text-muted-foreground/30',
-            )}>
-              {isFuture ? '—' : count > 0 ? count : '·'}
+            <span className={cn('text-sm font-semibold tabular-nums', dayCellColor(isFuture, count))}>
+              {dayCellLabel(isFuture, count)}
             </span>
             <span className="text-[9px] text-muted-foreground/60 font-mono">{d.getDate()}</span>
           </div>
@@ -83,15 +92,19 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
   )
 }
 
-function relativeDate(dateStr: string) {
+function relativeDate(dateStr: string): string {
   const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
   if (days === 0) return 'today'
   if (days === 1) return 'yesterday'
   return `${days} days ago`
 }
 
-function fmtDate(dateStr: string) {
+function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function pct(num: number, den: number): number {
+  return den > 0 ? Math.round(num / den * 100) : 0
 }
 
 export default function Retro() {
@@ -113,10 +126,10 @@ export default function Retro() {
 
   const sentWeek = parseInt(data.stats.sent_week) || 0
   const rcvdWeek = parseInt(data.stats.received_week) || 0
-  const replyRate = sentWeek > 0 ? Math.round(rcvdWeek / sentWeek * 100) : 0
+  const replyRate = pct(rcvdWeek, sentWeek)
   const sentTotal = parseInt(data.alltime.sent_total) || 0
   const rcvdTotal = parseInt(data.alltime.received_total) || 0
-  const rateTotal = sentTotal > 0 ? Math.round(rcvdTotal / sentTotal * 100) : 0
+  const rateTotal = pct(rcvdTotal, sentTotal)
 
   const sourceMap: Record<string, Record<string, number>> = {}
   data.bySource.forEach(r => {
@@ -158,26 +171,28 @@ export default function Retro() {
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               {Object.entries(sourceMap).map(([source, stages]) => {
-                const outreached = stages['Outreached'] || 0
-                const responded = stages['Responded'] || 0
-                const ongoing = stages['Ongoing'] || 0
-                const max = outreached || 1
+                const outreached = stages['Outreached'] ?? 0
+                const responded = stages['Responded'] ?? 0
+                const ongoing = stages['Ongoing'] ?? 0
+                const rows: { label: string; count: number; width: number }[] = [
+                  { label: 'Outreached', count: outreached, width: 100 },
+                  { label: 'Responded', count: responded, width: pct(responded, outreached) },
+                  { label: 'Ongoing', count: ongoing, width: pct(ongoing, outreached) },
+                ]
                 return (
                   <div key={source} className="border border-border rounded-lg p-3">
                     <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3">{source}</p>
-                    {[['Outreached', outreached, 100], ['Responded', responded, Math.round(responded / max * 100)], ['Ongoing', ongoing, Math.round(ongoing / max * 100)]].map(
-                      ([label, count, pct]) => (
-                        <div key={label as string}>
-                          <div className="flex justify-between text-xs mb-0.5">
-                            <span className="text-muted-foreground">{label}</span>
-                            <span className="font-medium">{count}</span>
-                          </div>
-                          <div className="h-px bg-border mb-2 relative">
-                            <div className="absolute inset-y-0 left-0 bg-foreground/30" style={{ width: `${pct}%` }} />
-                          </div>
+                    {rows.map(row => (
+                      <div key={row.label}>
+                        <div className="flex justify-between text-xs mb-0.5">
+                          <span className="text-muted-foreground">{row.label}</span>
+                          <span className="font-medium">{row.count}</span>
                         </div>
-                      )
-                    )}
+                        <div className="h-px bg-border mb-2 relative">
+                          <div className="absolute inset-y-0 left-0 bg-foreground/30" style={{ width: `${row.width}%` }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )
               })}
@@ -193,8 +208,11 @@ export default function Retro() {
         ) : (
           <div className="flex flex-col gap-1">
             {data.needsAction.map((c, i) => (
-              <div key={i} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-muted/30 text-sm">
-                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.stage === 'Ongoing' ? 'bg-destructive' : 'bg-muted-foreground'}`} />
+              <div key={`${c.name}-${i}`} className="flex items-center gap-3 py-2.5 px-3 rounded-lg bg-muted/30 text-sm">
+                <div className={cn(
+                  'w-1.5 h-1.5 rounded-full shrink-0',
+                  c.stage === 'Ongoing' ? 'bg-destructive' : 'bg-muted-foreground',
+                )} />
                 <span className="font-medium flex-1">{c.name}</span>
                 <span className="text-muted-foreground text-xs">{c.company ?? '—'}</span>
                 <span className="text-muted-foreground text-xs">
@@ -240,7 +258,7 @@ export default function Retro() {
               </thead>
               <tbody>
                 {weeks.map(([week, { sent, received }]) => {
-                  const rate = sent > 0 ? `${Math.round(received / sent * 100)}%` : '—'
+                  const rate = sent > 0 ? `${pct(received, sent)}%` : '—'
                   return (
                     <tr key={week} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                       <td className="py-2.5 px-3">{fmtDate(week)}</td>

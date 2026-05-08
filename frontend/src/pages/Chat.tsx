@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { marked } from 'marked'
 import { ChevronRight, Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -12,6 +12,10 @@ const THINKING = [
   'Deliberating...', 'Marinating...', 'Stewing...', 'Palavering...',
   'Machinating...', 'Puttering...', 'Rummaging...', 'Bamboozling...',
 ]
+
+function randomThinking(): string {
+  return THINKING[Math.floor(Math.random() * THINKING.length)]
+}
 
 interface ToolCallData {
   toolCallId: string
@@ -117,7 +121,7 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const adjustHeight = () => {
+  function adjustHeight(): void {
     const el = textareaRef.current
     if (!el) return
     el.style.height = 'auto'
@@ -138,7 +142,7 @@ export default function Chat() {
     setMessages(prev => [
       ...prev,
       { id: userId, role: 'user', text },
-      { id: agentId, role: 'agent', text: THINKING[Math.floor(Math.random() * THINKING.length)], thinking: true, toolCalls: [] },
+      { id: agentId, role: 'agent', text: randomThinking(), thinking: true, toolCalls: [] },
     ])
     setInput('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -146,11 +150,7 @@ export default function Chat() {
 
     const thinkingInterval = setInterval(() => {
       activeThinkingRef.current = (activeThinkingRef.current + 1) % THINKING.length
-      setMessages(prev => prev.map(m =>
-        m.id === agentId && m.thinking
-          ? { ...m, text: THINKING[activeThinkingRef.current] }
-          : m
-      ))
+      updateMessage(agentId, m => m.thinking ? { ...m, text: THINKING[activeThinkingRef.current] } : m)
     }, 600)
 
     try {
@@ -169,9 +169,7 @@ export default function Chat() {
       const reader = res.body!.getReader()
       const decoder = new TextDecoder()
 
-      setMessages(prev => prev.map(m =>
-        m.id === agentId ? { ...m, text: '', thinking: false } : m
-      ))
+      updateMessage(agentId, m => ({ ...m, text: '', thinking: false }))
 
       while (true) {
         const { done, value } = await reader.read()
@@ -186,36 +184,27 @@ export default function Chat() {
           const trimmed = line.slice(6).trim()
           if (!trimmed || trimmed === '[DONE]') continue
 
+          let chunk: { type?: string; payload?: any }
           try {
-            const chunk = JSON.parse(trimmed)
+            chunk = JSON.parse(trimmed)
+          } catch {
+            continue
+          }
 
-            if (chunk.type === 'text-delta' && chunk.payload?.text) {
-              textContent += chunk.payload.text
-              const html = marked.parse(textContent)
-              updateMessage(agentId, m => ({ ...m, text: textContent }))
-              void html
+          if (chunk.type === 'text-delta' && chunk.payload?.text) {
+            textContent += chunk.payload.text
+            updateMessage(agentId, m => ({ ...m, text: textContent }))
+          } else if (chunk.type === 'tool-call' && chunk.payload) {
+            const { toolCallId, toolName, args } = chunk.payload
+            toolCallMap[toolCallId] = { toolCallId, toolName, args, result: undefined }
+            updateMessage(agentId, m => ({ ...m, toolCalls: Object.values(toolCallMap) }))
+          } else if (chunk.type === 'tool-result' && chunk.payload) {
+            const { toolCallId, result } = chunk.payload
+            if (toolCallMap[toolCallId]) {
+              toolCallMap[toolCallId] = { ...toolCallMap[toolCallId], result }
+              updateMessage(agentId, m => ({ ...m, toolCalls: Object.values(toolCallMap) }))
             }
-
-            if (chunk.type === 'tool-call' && chunk.payload) {
-              const { toolCallId, toolName, args } = chunk.payload
-              toolCallMap[toolCallId] = { toolCallId, toolName, args, result: undefined }
-              updateMessage(agentId, m => ({
-                ...m,
-                toolCalls: Object.values(toolCallMap),
-              }))
-            }
-
-            if (chunk.type === 'tool-result' && chunk.payload) {
-              const { toolCallId, result } = chunk.payload
-              if (toolCallMap[toolCallId]) {
-                toolCallMap[toolCallId] = { ...toolCallMap[toolCallId], result }
-                updateMessage(agentId, m => ({
-                  ...m,
-                  toolCalls: Object.values(toolCallMap),
-                }))
-              }
-            }
-          } catch { /* skip */ }
+          }
         }
       }
     } catch (err) {
@@ -227,7 +216,7 @@ export default function Chat() {
     }
   }, [input, streaming, updateMessage])
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>): void {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       send()
@@ -236,24 +225,24 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-4">
-        {messages.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] gap-3 text-center px-4">
-            <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center">
-              <div className="w-3 h-3 rounded-full bg-foreground/60" />
-            </div>
-            <div>
-              <p className="text-xl font-semibold tracking-tight">What's happening today?</p>
-              <p className="text-sm text-muted-foreground mt-1">Paste a job post, log outreach, or ask anything about your pipeline.</p>
-            </div>
+      {messages.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4 text-center">
+          <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center">
+            <div className="w-3 h-3 rounded-full bg-foreground/60" />
           </div>
-        ) : (
-          <div className="max-w-[680px] mx-auto w-full flex flex-col gap-4">
+          <div>
+            <p className="text-xl font-semibold tracking-tight">What's happening today?</p>
+            <p className="text-sm text-muted-foreground mt-1">Paste a job post, log outreach, or ask anything about your pipeline.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="max-w-[680px] mx-auto flex flex-col gap-4">
             {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
             <div ref={messagesEndRef} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="border-t border-border bg-background px-4 py-3 shrink-0">
         <div className="max-w-[680px] mx-auto">

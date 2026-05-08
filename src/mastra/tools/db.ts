@@ -1,8 +1,12 @@
 import { createTool } from '@mastra/core/tools'
-import { z } from 'zod'
 import { randomBytes } from 'crypto'
+import { z } from 'zod'
 import { pool } from '../pool'
-const newId = () => randomBytes(8).toString('hex')
+import { searchNotes } from '../queries'
+
+function newId(): string {
+  return randomBytes(8).toString('hex')
+}
 
 export const upsertCompany = createTool({
   id: 'upsert_company',
@@ -148,22 +152,7 @@ export const searchNotesTool = createTool({
   inputSchema: z.object({
     query: z.string().describe('Keyword or phrase to search for in notes'),
   }),
-  execute: async ({ query }) => {
-    const result = await pool.query(`
-      SELECT id, category, title, url, content, created_at
-      FROM notes
-      WHERE to_tsvector('english',
-          COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, ''))
-        @@ plainto_tsquery('english', $1)
-      ORDER BY ts_rank(
-        to_tsvector('english',
-          COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, '')),
-        plainto_tsquery('english', $1)
-      ) DESC
-      LIMIT 10
-    `, [query])
-    return result.rows
-  },
+  execute: async ({ query }) => searchNotes(query, 10),
 })
 
 export const logContentPost = createTool({

@@ -1,8 +1,15 @@
+import type { LucideIcon } from 'lucide-react'
+import { Activity, BarChart2, Briefcase, Database, FileText, Inbox, MessageSquare, Pencil, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-import { MessageSquare, Users, BarChart2, FileText, Briefcase, Inbox, Pencil, Activity, Database } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const mainNavItems = [
+interface NavItem {
+  to: string
+  label: string
+  icon: LucideIcon
+}
+
+const mainNavItems: NavItem[] = [
   { to: '/', label: 'Chat', icon: MessageSquare },
   { to: '/leads', label: 'Leads', icon: Inbox },
   { to: '/pipeline', label: 'Pipeline', icon: Users },
@@ -10,20 +17,32 @@ const mainNavItems = [
   { to: '/notes', label: 'Notes', icon: FileText },
 ]
 
-const utilNavItems = [
+const utilNavItems: NavItem[] = [
   { to: '/applications', label: 'Applications', icon: Briefcase },
   { to: '/content', label: 'Content', icon: Pencil },
   { to: '/usage', label: 'Usage', icon: Activity },
   { to: '/schema', label: 'Schema', icon: Database },
 ]
 
-const mobileNavItems = [
-  { to: '/', label: 'Chat', icon: MessageSquare },
-  { to: '/leads', label: 'Leads', icon: Inbox },
-  { to: '/pipeline', label: 'Pipeline', icon: Users },
-  { to: '/retro', label: 'Retro', icon: BarChart2 },
-  { to: '/notes', label: 'Notes', icon: FileText },
-]
+function SidebarLink({ to, label, icon: Icon }: NavItem) {
+  return (
+    <NavLink
+      to={to}
+      end={to === '/'}
+      className={({ isActive }) =>
+        cn(
+          'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
+          isActive
+            ? 'bg-sidebar-accent text-sidebar-foreground font-medium'
+            : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
+        )
+      }
+    >
+      <Icon size={16} />
+      {label}
+    </NavLink>
+  )
+}
 
 export function Sidebar() {
   return (
@@ -34,43 +53,10 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-col flex-1 px-2 py-3 gap-0.5 overflow-y-auto">
-        {mainNavItems.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === '/'}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-                isActive
-                  ? 'bg-sidebar-accent text-sidebar-foreground font-medium'
-                  : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
-              )
-            }
-          >
-            <Icon size={16} />
-            {label}
-          </NavLink>
-        ))}
+        {mainNavItems.map(item => <SidebarLink key={item.to} {...item} />)}
 
         <div className="mt-auto pt-4 border-t border-border mx-1 flex flex-col gap-0.5">
-          {utilNavItems.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors',
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-foreground font-medium'
-                    : 'text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50',
-                )
-              }
-            >
-              <Icon size={16} />
-              {label}
-            </NavLink>
-          ))}
+          {utilNavItems.map(item => <SidebarLink key={item.to} {...item} />)}
         </div>
       </nav>
     </aside>
@@ -81,7 +67,7 @@ export function BottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-background border-t border-border pb-safe">
       <div className="flex">
-        {mobileNavItems.map(({ to, label, icon: Icon }) => (
+        {mainNavItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}

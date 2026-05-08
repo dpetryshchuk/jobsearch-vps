@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ExternalLink, Upload } from 'lucide-react'
 
 const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : ''
@@ -13,15 +13,17 @@ interface Application {
   resume_path: string | null
 }
 
-function fmtDate(s: string) {
+function fmtDate(s: string): string {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function UploadButton({ appId, currentPath, onUploaded }: {
+interface UploadButtonProps {
   appId: string
   currentPath: string | null
   onUploaded: (path: string) => void
-}) {
+}
+
+function UploadButton({ appId, currentPath, onUploaded }: UploadButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
 
@@ -43,6 +45,8 @@ function UploadButton({ appId, currentPath, onUploaded }: {
     }
   }
 
+  const label = uploading ? 'Uploading…' : currentPath ?? 'Upload'
+
   return (
     <>
       <input ref={inputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleFile} />
@@ -53,7 +57,7 @@ function UploadButton({ appId, currentPath, onUploaded }: {
         title={currentPath ? 'Replace resume' : 'Upload resume'}
       >
         <Upload size={12} />
-        {uploading ? 'Uploading…' : currentPath ? currentPath : 'Upload'}
+        {label}
       </button>
     </>
   )

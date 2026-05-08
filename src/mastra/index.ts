@@ -1,12 +1,25 @@
 import { Mastra } from '@mastra/core'
-import { PostgresStore } from '@mastra/pg'
-import { Observability } from '@mastra/observability'
 import { LangfuseExporter } from '@mastra/langfuse'
-import { jobsearchAgent } from './agents/jobsearch'
-import { getPipeline, getRetro, getContentPosts, getLeads, getApplications, getNotes, searchNotes, createNote } from './queries'
+import { Observability } from '@mastra/observability'
+import { PostgresStore } from '@mastra/pg'
 import { randomBytes } from 'crypto'
-import { writeFileSync, mkdirSync } from 'fs'
-import { join, extname } from 'path'
+import { mkdirSync, writeFileSync } from 'fs'
+import { extname, join } from 'path'
+import { jobsearchAgent } from './agents/jobsearch'
+import { pool } from './pool'
+import {
+  createNote,
+  getApplications,
+  getContentPosts,
+  getLeads,
+  getNotes,
+  getPipeline,
+  getRetro,
+  searchNotes,
+} from './queries'
+
+const UPLOADS_DIR = '/home/dima/jobsearch/uploads'
+const LANGFUSE_HOST = process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com'
 
 const storage = new PostgresStore({
   id: 'pg-storage',
@@ -21,7 +34,7 @@ const observability = new Observability({
         new LangfuseExporter({
           publicKey: process.env.LANGFUSE_PUBLIC_KEY,
           secretKey: process.env.LANGFUSE_SECRET_KEY,
-          baseUrl: process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com',
+          baseUrl: LANGFUSE_HOST,
           realtime: true,
         }),
       ],
@@ -29,55 +42,39 @@ const observability = new Observability({
   },
 })
 
+// GET handler: just JSON-return whatever the loader resolves to.
+function jsonGet<T>(load: () => Promise<T>) {
+  return {
+    method: 'GET' as const,
+    handler: async (c: any) => c.json(await load()),
+  }
+}
+
+async function fetchUsage(): Promise<{ traces: unknown[]; daily: unknown[] }> {
+  const auth = Buffer.from(
+    `${process.env.LANGFUSE_PUBLIC_KEY}:${process.env.LANGFUSE_SECRET_KEY}`,
+  ).toString('base64')
+  const headers = { Authorization: `Basic ${auth}` }
+  const [tracesRes, dailyRes] = await Promise.all([
+    fetch(`${LANGFUSE_HOST}/api/public/traces?limit=50&orderBy=timestamp&order=DESC`, { headers }),
+    fetch(`${LANGFUSE_HOST}/api/public/metrics/daily?limit=30`, { headers }),
+  ])
+  const [traces, daily] = await Promise.all([tracesRes.json(), dailyRes.json()])
+  return { traces: traces.data ?? [], daily: daily.data ?? [] }
+}
+
 export const mastra = new Mastra({
   agents: { jobsearchAgent },
   storage,
   observability,
   server: {
     apiRoutes: [
-      {
-        path: '/data/usage',
-        method: 'GET' as const,
-        handler: async (c: any) => {
-          const base = process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com'
-          const auth = Buffer.from(`${process.env.LANGFUSE_PUBLIC_KEY}:${process.env.LANGFUSE_SECRET_KEY}`).toString('base64')
-          const [tracesRes, dailyRes] = await Promise.all([
-            fetch(`${base}/api/public/traces?limit=50&orderBy=timestamp&order=DESC`, {
-              headers: { Authorization: `Basic ${auth}` },
-            }),
-            fetch(`${base}/api/public/metrics/daily?limit=30`, {
-              headers: { Authorization: `Basic ${auth}` },
-            }),
-          ])
-          const [traces, daily] = await Promise.all([tracesRes.json(), dailyRes.json()])
-          return c.json({ traces: traces.data ?? [], daily: daily.data ?? [] })
-        },
-      },
-      {
-        path: '/data/pipeline',
-        method: 'GET' as const,
-        handler: async (c: any) => c.json(await getPipeline()),
-      },
-      {
-        path: '/data/retro',
-        method: 'GET' as const,
-        handler: async (c: any) => c.json(await getRetro()),
-      },
-      {
-        path: '/data/content',
-        method: 'GET' as const,
-        handler: async (c: any) => c.json(await getContentPosts()),
-      },
-      {
-        path: '/data/leads',
-        method: 'GET' as const,
-        handler: async (c: any) => c.json(await getLeads()),
-      },
-      {
-        path: '/data/applications',
-        method: 'GET' as const,
-        handler: async (c: any) => c.json(await getApplications()),
-      },
+      { path: '/data/usage', ...jsonGet(fetchUsage) },
+      { path: '/data/pipeline', ...jsonGet(getPipeline) },
+      { path: '/data/retro', ...jsonGet(getRetro) },
+      { path: '/data/content', ...jsonGet(getContentPosts) },
+      { path: '/data/leads', ...jsonGet(getLeads) },
+      { path: '/data/applications', ...jsonGet(getApplications) },
       {
         path: '/data/notes',
         method: 'GET' as const,
@@ -95,15 +92,12 @@ export const mastra = new Mastra({
           const applicationId = formData.get('applicationId') as string | null
           if (!file || !applicationId) return c.json({ error: 'Missing file or applicationId' }, 400)
 
-          const uploadsDir = '/home/dima/jobsearch/uploads'
-          mkdirSync(uploadsDir, { recursive: true })
+          mkdirSync(UPLOADS_DIR, { recursive: true })
           const ext = extname(file.name) || '.pdf'
           const fileName = `${applicationId}${ext}`
-          const filePath = join(uploadsDir, fileName)
-          writeFileSync(filePath, Buffer.from(await file.arrayBuffer()))
+          writeFileSync(join(UPLOADS_DIR, fileName), Buffer.from(await file.arrayBuffer()))
 
-          const { pool: pg } = await import('./pool')
-          await pg.query('UPDATE job_postings SET resume_path = $1 WHERE id = $2', [fileName, applicationId])
+          await pool.query('UPDATE job_postings SET resume_path = $1 WHERE id = $2', [fileName, applicationId])
           return c.json({ path: fileName })
         },
       },
