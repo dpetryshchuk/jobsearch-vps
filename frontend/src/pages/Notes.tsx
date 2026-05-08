@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
-import { Plus, X, ExternalLink, Search, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, X, ExternalLink, Search, ChevronDown, Sparkles, Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { marked } from 'marked'
 
 const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : ''
 
@@ -82,6 +83,99 @@ function NoteRow({ note }: { note: Note }) {
   )
 }
 
+const STREAM_URL = BASE + '/api/agents/jobsearch/stream'
+
+function AskPanel({ onClose }: { onClose: () => void }) {
+  const [input, setInput] = useState('')
+  const [answer, setAnswer] = useState('')
+  const [loading, setLoading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [])
+
+  const ask = async () => {
+    const q = input.trim()
+    if (!q || loading) return
+    setLoading(true)
+    setAnswer('')
+    try {
+      const res = await fetch(STREAM_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: `Search my notes: ${q}` }] }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      let text = ''
+      let buffer = ''
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const parts = buffer.split('\n\n')
+        buffer = parts.pop() ?? ''
+        for (const part of parts) {
+          const line = part.trim()
+          if (!line.startsWith('data: ')) continue
+          const trimmed = line.slice(6).trim()
+          if (!trimmed || trimmed === '[DONE]') continue
+          try {
+            const chunk = JSON.parse(trimmed)
+            if (chunk.type === 'text-delta' && chunk.payload?.text) {
+              text += chunk.payload.text
+              setAnswer(text)
+            }
+          } catch { /* skip */ }
+        }
+      }
+    } catch (e) {
+      setAnswer(e instanceof Error ? `Error: ${e.message}` : 'Something went wrong.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="border-b border-border bg-muted/10 px-4 py-3 flex flex-col gap-3 shrink-0">
+      <div className="flex items-center gap-2">
+        <Sparkles size={13} className="text-muted-foreground shrink-0" />
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && ask()}
+          placeholder="Ask about your notes…"
+          className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground outline-none"
+        />
+        <button
+          onClick={ask}
+          disabled={loading || !input.trim()}
+          className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+        >
+          <Send size={13} />
+        </button>
+        <button onClick={onClose} className="shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors">
+          <X size={13} />
+        </button>
+      </div>
+      {(loading || answer) && (
+        <div className={cn(
+          'text-sm leading-relaxed rounded-lg border border-border bg-card px-3 py-2.5',
+          loading && !answer && 'text-muted-foreground animate-pulse'
+        )}>
+          {loading && !answer ? 'Searching…' : (
+            <div
+              className="prose prose-sm prose-neutral dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: marked.parse(answer) as string }}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Notes() {
   const [notes, setNotes] = useState<Note[]>([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +183,7 @@ export default function Notes() {
   const [filter, setFilter] = useState<CategoryFilter>('all')
   const [query, setQuery] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [showAsk, setShowAsk] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -164,13 +259,29 @@ export default function Notes() {
           className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground outline-none"
           placeholder="Search notes..."
         />
-        <button
-          onClick={() => { setShowAdd(v => !v); if (showAdd) resetForm() }}
-          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border border-border rounded-md px-2.5 py-1.5 hover:text-foreground hover:border-foreground/30 transition-colors shrink-0"
-        >
-          {showAdd ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add</>}
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            onClick={() => { setShowAsk(v => !v); if (!showAsk) setShowAdd(false) }}
+            className={cn(
+              'flex items-center gap-1.5 text-xs font-medium border rounded-md px-2.5 py-1.5 transition-colors',
+              showAsk
+                ? 'border-foreground text-foreground'
+                : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30'
+            )}
+          >
+            <Sparkles size={12} /> Ask
+          </button>
+          <button
+            onClick={() => { setShowAdd(v => !v); if (showAdd) resetForm(); if (!showAdd) setShowAsk(false) }}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border border-border rounded-md px-2.5 py-1.5 hover:text-foreground hover:border-foreground/30 transition-colors"
+          >
+            {showAdd ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add</>}
+          </button>
+        </div>
       </div>
+
+      {/* Ask panel */}
+      {showAsk && <AskPanel onClose={() => setShowAsk(false)} />}
 
       {/* Add form */}
       {showAdd && (

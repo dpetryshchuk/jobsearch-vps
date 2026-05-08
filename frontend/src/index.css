@@ -78,4 +78,19 @@
   html {
     font-family: 'Geist Variable', 'Geist', system-ui, sans-serif;
   }
+
+  /* Prevent iOS Safari from zooming on input focus */
+  @media (max-width: 768px) {
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Safe area padding utilities */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
 }

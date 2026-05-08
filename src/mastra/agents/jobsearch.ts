@@ -1,5 +1,5 @@
 import { Agent } from "@mastra/core/agent"
-import { logInteraction, queryDb, upsertCompany, upsertContact, upsertJobPosting, updateStage, logContentPost } from "../tools/db"
+import { logInteraction, queryDb, upsertCompany, upsertContact, upsertJobPosting, updateStage, logContentPost, searchNotesTool } from "../tools/db"
 
 const INSTRUCTIONS = `You are a job search CRM assistant. You help log and track every event in a structured job search pipeline.
 
@@ -48,6 +48,9 @@ upsert_* tools search before inserting — they never create duplicates.
 - contacts: LinkedIn | YC | Cold Email | Referral | Event
 - job_postings: YC | HN | RemoteOK | SimplifyJobs | LinkedIn | CompanySite
 
+## Notes and reading list
+Use search_notes when the user asks what they saved, read, or noted about a topic.
+
 ## Analytics queries
 Use query_db for read-only lookups and retro questions.
 When the user pastes unstructured text (a LinkedIn profile, a job posting, an email), extract the relevant fields and call the appropriate tools. Ask for clarification only if you cannot determine the company name.`
@@ -66,5 +69,6 @@ export const jobsearchAgent = new Agent({
         logInteraction,
         logContentPost,
         queryDb,
+        searchNotes: searchNotesTool,
     },
 })

@@ -3,8 +3,10 @@ import { PostgresStore } from '@mastra/pg'
 import { Observability } from '@mastra/observability'
 import { LangfuseExporter } from '@mastra/langfuse'
 import { jobsearchAgent } from './agents/jobsearch'
-import { getPipeline, getRetro, getContentPosts, getLeads, getApplications, getNotes, createNote } from './queries'
+import { getPipeline, getRetro, getContentPosts, getLeads, getApplications, getNotes, searchNotes, createNote } from './queries'
 import { randomBytes } from 'crypto'
+import { writeFileSync, mkdirSync } from 'fs'
+import { join, extname } from 'path'
 
 const storage = new PostgresStore({
   id: 'pg-storage',
@@ -79,7 +81,31 @@ export const mastra = new Mastra({
       {
         path: '/data/notes',
         method: 'GET' as const,
-        handler: async (c: any) => c.json(await getNotes()),
+        handler: async (c: any) => {
+          const q = c.req.query('q')
+          return c.json(q ? await searchNotes(q) : await getNotes())
+        },
+      },
+      {
+        path: '/data/resumes',
+        method: 'POST' as const,
+        handler: async (c: any) => {
+          const formData = await c.req.formData()
+          const file = formData.get('file') as File | null
+          const applicationId = formData.get('applicationId') as string | null
+          if (!file || !applicationId) return c.json({ error: 'Missing file or applicationId' }, 400)
+
+          const uploadsDir = '/home/dima/jobsearch/uploads'
+          mkdirSync(uploadsDir, { recursive: true })
+          const ext = extname(file.name) || '.pdf'
+          const fileName = `${applicationId}${ext}`
+          const filePath = join(uploadsDir, fileName)
+          writeFileSync(filePath, Buffer.from(await file.arrayBuffer()))
+
+          const { pool: pg } = await import('./pool')
+          await pg.query('UPDATE job_postings SET resume_path = $1 WHERE id = $2', [fileName, applicationId])
+          return c.json({ path: fileName })
+        },
       },
       {
         path: '/data/notes',

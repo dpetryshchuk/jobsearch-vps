@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 
 const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : ''
 
 interface RetroData {
+  daily: { date: string; direction: string; n: string }[]
   stats: {
     sent_week: string
     received_week: string
@@ -19,6 +21,56 @@ interface RetroData {
     first_interaction: string | null
   }
   weekly: { week: string; direction: string; n: string }[]
+}
+
+const DAY_NAMES = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+
+function CalendarStrip({ daily }: { daily: { date: string; direction: string; n: string }[] }) {
+  const today = new Date()
+  const dow = today.getDay()
+  const monday = new Date(today)
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1))
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    return d
+  })
+
+  const countMap: Record<string, number> = {}
+  daily.forEach(r => {
+    countMap[r.date] = (countMap[r.date] || 0) + parseInt(r.n)
+  })
+
+  const todayStr = today.toISOString().slice(0, 10)
+
+  return (
+    <div className="flex gap-1.5 mb-6">
+      {days.map((d, i) => {
+        const dateStr = d.toISOString().slice(0, 10)
+        const count = countMap[dateStr] || 0
+        const isToday = dateStr === todayStr
+        const isFuture = dateStr > todayStr
+        return (
+          <div key={dateStr} className={cn(
+            'flex-1 flex flex-col items-center gap-1 py-2.5 rounded-lg border text-center',
+            isToday ? 'border-foreground bg-foreground/5' : 'border-border',
+          )}>
+            <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+              {DAY_NAMES[i]}
+            </span>
+            <span className={cn(
+              'text-sm font-semibold tabular-nums',
+              isFuture ? 'text-muted-foreground/20' : count > 0 ? 'text-foreground' : 'text-muted-foreground/30',
+            )}>
+              {isFuture ? '—' : count > 0 ? count : '·'}
+            </span>
+            <span className="text-[9px] text-muted-foreground/60 font-mono">{d.getDate()}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -90,6 +142,8 @@ export default function Retro() {
             {'Week of ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </span>
         </div>
+        <CalendarStrip daily={data.daily} />
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <StatCard label="Sent out" value={sentWeek} sub="this week" />
           <StatCard label="Replies in" value={rcvdWeek} sub="this week" />

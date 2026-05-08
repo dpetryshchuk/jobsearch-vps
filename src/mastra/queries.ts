@@ -28,6 +28,7 @@ export async function getPipeline(): Promise<PipelineRow[]> {
 
 export interface RetroResult {
   weekly: { week: string; direction: string; n: string }[]
+  daily: { date: string; direction: string; n: string }[]
   bySource: { source: string; stage: string; n: string }[]
   stats: {
     sent_week: string
@@ -46,13 +47,20 @@ export interface RetroResult {
 }
 
 export async function getRetro(): Promise<RetroResult> {
-  const [weekly, bySource, stats, needsAction, alltime] = await Promise.all([
+  const [weekly, daily, bySource, stats, needsAction, alltime] = await Promise.all([
     pool.query(`
       SELECT to_char(date_trunc('week', date::timestamp), 'YYYY-MM-DD') as week,
              direction, COUNT(*) as n
       FROM interactions
       GROUP BY week, direction
       ORDER BY week DESC
+    `),
+    pool.query(`
+      SELECT date::text, direction, COUNT(*) as n
+      FROM interactions
+      WHERE date::date >= CURRENT_DATE - 6
+      GROUP BY date, direction
+      ORDER BY date ASC
     `),
     pool.query(`
       SELECT source, stage, COUNT(*) as n
@@ -91,6 +99,7 @@ export async function getRetro(): Promise<RetroResult> {
   ])
   return {
     weekly: weekly.rows,
+    daily: daily.rows,
     bySource: bySource.rows,
     stats: stats.rows[0],
     needsAction: needsAction.rows,
@@ -155,6 +164,23 @@ export async function getNotes(): Promise<NoteRow[]> {
     FROM notes
     ORDER BY created_at DESC
   `)
+  return result.rows
+}
+
+export async function searchNotes(q: string): Promise<NoteRow[]> {
+  const result = await pool.query(`
+    SELECT id, category, title, url, content, created_at
+    FROM notes
+    WHERE to_tsvector('english',
+        COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, ''))
+      @@ plainto_tsquery('english', $1)
+    ORDER BY ts_rank(
+      to_tsvector('english',
+        COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, '')),
+      plainto_tsquery('english', $1)
+    ) DESC
+    LIMIT 15
+  `, [q])
   return result.rows
 }
 

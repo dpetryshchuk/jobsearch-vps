@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { ExternalLink, Upload } from 'lucide-react'
 
 const BASE = window.location.hostname === 'localhost' ? 'http://localhost:4111' : ''
 
@@ -17,6 +17,48 @@ function fmtDate(s: string) {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+function UploadButton({ appId, currentPath, onUploaded }: {
+  appId: string
+  currentPath: string | null
+  onUploaded: (path: string) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('applicationId', appId)
+      const r = await fetch(BASE + '/data/resumes', { method: 'POST', body: fd })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      const { path } = await r.json()
+      onUploaded(path)
+    } finally {
+      setUploading(false)
+      if (inputRef.current) inputRef.current.value = ''
+    }
+  }
+
+  return (
+    <>
+      <input ref={inputRef} type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleFile} />
+      <button
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+        title={currentPath ? 'Replace resume' : 'Upload resume'}
+      >
+        <Upload size={12} />
+        {uploading ? 'Uploading…' : currentPath ? currentPath : 'Upload'}
+      </button>
+    </>
+  )
+}
+
 export default function Applications() {
   const [apps, setApps] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
@@ -29,6 +71,10 @@ export default function Applications() {
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
+
+  const updateResume = (id: string, path: string) => {
+    setApps(prev => prev.map(a => a.id === id ? { ...a, resume_path: path } : a))
+  }
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -61,8 +107,12 @@ export default function Applications() {
                     <td className="py-2.5 px-3 text-muted-foreground">{app.company ?? '—'}</td>
                     <td className="py-2.5 px-3 text-muted-foreground">{app.source}</td>
                     <td className="py-2.5 px-3 text-muted-foreground text-xs">{fmtDate(app.scraped_date)}</td>
-                    <td className="py-2.5 px-3 text-xs text-muted-foreground">
-                      {app.resume_path ?? '—'}
+                    <td className="py-2.5 px-3">
+                      <UploadButton
+                        appId={app.id}
+                        currentPath={app.resume_path}
+                        onUploaded={path => updateResume(app.id, path)}
+                      />
                     </td>
                     <td className="py-2.5 px-3">
                       {app.link && (

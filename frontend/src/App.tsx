@@ -14,7 +14,7 @@ export default function App() {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar />
-      <main className="flex-1 md:ml-56 flex flex-col min-h-screen pb-16 md:pb-0">
+      <main className="flex-1 md:ml-56 flex flex-col min-h-screen pb-20 md:pb-0" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         <Routes>
           <Route path="/" element={<Chat />} />
           <Route path="/pipeline" element={<Pipeline />} />

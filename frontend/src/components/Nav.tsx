@@ -79,7 +79,7 @@ export function Sidebar() {
 
 export function BottomNav() {
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-background border-t border-border safe-area-inset-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-background border-t border-border pb-safe">
       <div className="flex">
         {mobileNavItems.map(({ to, label, icon: Icon }) => (
           <NavLink

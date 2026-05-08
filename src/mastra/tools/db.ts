@@ -142,6 +142,30 @@ export const queryDb = createTool({
   },
 })
 
+export const searchNotesTool = createTool({
+  id: 'search_notes',
+  description: 'Search saved notes, articles, and reading list by keyword. Use when the user asks what they have saved, read, or noted about a topic.',
+  inputSchema: z.object({
+    query: z.string().describe('Keyword or phrase to search for in notes'),
+  }),
+  execute: async ({ query }) => {
+    const result = await pool.query(`
+      SELECT id, category, title, url, content, created_at
+      FROM notes
+      WHERE to_tsvector('english',
+          COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, ''))
+        @@ plainto_tsquery('english', $1)
+      ORDER BY ts_rank(
+        to_tsvector('english',
+          COALESCE(title, '') || ' ' || COALESCE(content, '') || ' ' || COALESCE(url, '')),
+        plainto_tsquery('english', $1)
+      ) DESC
+      LIMIT 10
+    `, [query])
+    return result.rows
+  },
+})
+
 export const logContentPost = createTool({
   id: 'log_content_post',
   description: 'Log a LinkedIn post for retro tracking. Call after publishing.',
