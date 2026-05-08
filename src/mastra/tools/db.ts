@@ -1,9 +1,7 @@
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { Pool } from 'pg'
 import { randomBytes } from 'crypto'
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+import { pool } from '../pool'
 const newId = () => randomBytes(8).toString('hex')
 
 export const upsertCompany = createTool({

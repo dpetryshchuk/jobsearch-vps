@@ -4,6 +4,9 @@ import Chat from '@/pages/Chat'
 import Pipeline from '@/pages/Pipeline'
 import Retro from '@/pages/Retro'
 import Notes from '@/pages/Notes'
+import Leads from '@/pages/Leads'
+import Applications from '@/pages/Applications'
+import Content from '@/pages/Content'
 import Usage from '@/pages/Usage'
 import Schema from '@/pages/Schema'
 
@@ -17,6 +20,9 @@ export default function App() {
           <Route path="/pipeline" element={<Pipeline />} />
           <Route path="/retro" element={<Retro />} />
           <Route path="/notes" element={<Notes />} />
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/applications" element={<Applications />} />
+          <Route path="/content" element={<Content />} />
           <Route path="/usage" element={<Usage />} />
           <Route path="/schema" element={<Schema />} />
         </Routes>

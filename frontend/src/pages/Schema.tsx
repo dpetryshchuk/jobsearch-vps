@@ -8,19 +8,6 @@ const SCHEMA = [
     ],
   },
   {
-    name: 'job_postings',
-    columns: [
-      { name: 'id', type: 'text', badge: 'PK' },
-      { name: 'company_id', type: 'text', badge: 'FK' },
-      { name: 'title', type: 'text' },
-      { name: 'link', type: 'text' },
-      { name: 'source', type: 'enum', hint: 'YC | HN | RemoteOK | Simplify' },
-      { name: 'scraped_date', type: 'date' },
-      { name: 'status', type: 'enum', hint: 'new | applied | dropped' },
-      { name: 'description', type: 'text' },
-    ],
-  },
-  {
     name: 'contacts',
     columns: [
       { name: 'id', type: 'text', badge: 'PK' },
@@ -31,6 +18,21 @@ const SCHEMA = [
       { name: 'stage', type: 'enum', hint: 'Outreached | Responded | Ongoing | Dead' },
       { name: 'outreach_date', type: 'date' },
       { name: 'notes', type: 'text' },
+      { name: 'content_post_id', type: 'text', badge: 'FK' },
+    ],
+  },
+  {
+    name: 'job_postings',
+    columns: [
+      { name: 'id', type: 'text', badge: 'PK' },
+      { name: 'company_id', type: 'text', badge: 'FK' },
+      { name: 'title', type: 'text' },
+      { name: 'link', type: 'text' },
+      { name: 'source', type: 'enum', hint: 'YC | HN | RemoteOK | SimplifyJobs | LinkedIn | CompanySite' },
+      { name: 'scraped_date', type: 'date' },
+      { name: 'status', type: 'enum', hint: 'new | applied | dropped' },
+      { name: 'description', type: 'text' },
+      { name: 'resume_path', type: 'text' },
     ],
   },
   {
@@ -48,11 +50,10 @@ const SCHEMA = [
     columns: [
       { name: 'id', type: 'text', badge: 'PK' },
       { name: 'posted_date', type: 'date' },
-      { name: 'title', type: 'text' },
+      { name: 'content', type: 'text' },
       { name: 'impressions', type: 'int' },
-      { name: 'reactions', type: 'int' },
+      { name: 'engagements', type: 'int' },
       { name: 'comments', type: 'int' },
-      { name: 'reposts', type: 'int' },
     ],
   },
 ]
