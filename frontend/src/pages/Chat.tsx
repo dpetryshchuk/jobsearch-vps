@@ -13,8 +13,6 @@ const THINKING = [
   'Machinating...', 'Puttering...', 'Rummaging...', 'Bamboozling...',
 ]
 
-type Mode = 'input' | 'rag'
-
 interface ToolCallData {
   toolCallId: string
   toolName: string
@@ -110,7 +108,6 @@ function MessageBubble({ msg }: { msg: Message }) {
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [mode, setMode] = useState<Mode>('input')
   const [streaming, setStreaming] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -146,12 +143,6 @@ export default function Chat() {
     setInput('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setStreaming(true)
-
-    if (mode === 'rag') {
-      updateMessage(agentId, m => ({ ...m, text: 'RAG not yet wired.', thinking: false }))
-      setStreaming(false)
-      return
-    }
 
     const thinkingInterval = setInterval(() => {
       activeThinkingRef.current = (activeThinkingRef.current + 1) % THINKING.length
@@ -234,7 +225,7 @@ export default function Chat() {
     } finally {
       setStreaming(false)
     }
-  }, [input, mode, streaming, updateMessage])
+  }, [input, streaming, updateMessage])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -284,28 +275,9 @@ export default function Chat() {
               <Send size={16} />
             </button>
           </div>
-          <div className="flex items-center justify-between mt-2 px-1">
-            <p className="text-[10px] text-muted-foreground font-mono">
-              Enter to send · Shift+Enter for newline ·{' '}
-              {mode === 'input' ? 'Agent logs to database' : 'Semantic search across notes'}
-            </p>
-            <div className="flex gap-1">
-              {(['input', 'rag'] as const).map(m => (
-                <button
-                  key={m}
-                  onClick={() => setMode(m)}
-                  className={cn(
-                    'px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest rounded border transition-colors',
-                    mode === m
-                      ? 'border-foreground text-foreground'
-                      : 'border-border text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          </div>
+          <p className="mt-2 px-1 text-[10px] text-muted-foreground font-mono">
+            Enter to send · Shift+Enter for newline
+          </p>
         </div>
       </div>
     </div>
