@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
-"""JobSpy scraper — LinkedIn + Indeed → jobsearch.sqlite"""
+"""JobSpy scraper — LinkedIn + Indeed → Postgres"""
 
+import os
 import re
 import secrets
-import sqlite3
 import sys
 from datetime import date
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding='utf-8')
-
+import psycopg2
+from dotenv import dotenv_values
 from jobspy import scrape_jobs
 
-DB_PATH = Path(__file__).parent.parent / 'db' / 'jobsearch.sqlite'
-TODAY = date.today().isoformat()
+sys.stdout.reconfigure(encoding='utf-8')
 
-# ── Role filters (mirrors tools/filters.ts) ───────────────────────────────────
+ENV = dotenv_values(Path(__file__).parent.parent / '.env')
+DATABASE_URL = os.environ.get('DATABASE_URL') or ENV.get('DATABASE_URL')
+TODAY = date.today().isoformat()
+DRY_RUN = '--dry' in sys.argv
+
+# ── Role filters ──────────────────────────────────────────────────────────────
 
 EXACT_ROLE_PHRASES = [
     'forward deployed', 'fde', 'solutions engineer', 'sales engineer',
@@ -121,27 +125,30 @@ def random_id() -> str:
     return secrets.token_hex(8)
 
 
-def load_existing(con: sqlite3.Connection):
-    company_map = {row[1].lower(): row[0] for row in con.execute('SELECT id, name FROM companies')}
+def load_existing(cur):
+    cur.execute('SELECT id, name FROM companies')
+    company_map = {row[1].lower(): row[0] for row in cur.fetchall()}
+    cur.execute('SELECT id, company_id, title, link, status FROM job_postings')
     posting_map = {}
-    for row in con.execute('SELECT id, company_id, title, link, status FROM job_postings'):
+    for row in cur.fetchall():
         key = f"{row[1]}::{(row[2] or '').lower()}"
         posting_map[key] = {'id': row[0], 'link': row[3], 'status': row[4]}
     return company_map, posting_map
 
 
-def upsert_company(con, company_map, name: str) -> str:
+def upsert_company(cur, company_map, name: str) -> str:
     if name.lower() in company_map:
         return company_map[name.lower()]
     cid = random_id()
-    con.execute('INSERT INTO companies (id, name, website) VALUES (?, ?, NULL)', (cid, name))
+    cur.execute('INSERT INTO companies (id, name) VALUES (%s, %s)', (cid, name))
     company_map[name.lower()] = cid
     return cid
 
 
 def sync_to_db(jobs: list[dict]) -> tuple[int, int, int]:
-    con = sqlite3.connect(DB_PATH)
-    company_map, posting_map = load_existing(con)
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    company_map, posting_map = load_existing(cur)
     created = updated = skipped = 0
 
     for job in jobs:
@@ -152,8 +159,7 @@ def sync_to_db(jobs: list[dict]) -> tuple[int, int, int]:
         url = job['url']
         source = job['source']
 
-        combined = f"{title} {company} {description}"
-        if is_defense(combined):
+        if is_defense(f"{title} {company} {description}"):
             skipped += 1
             continue
         if is_high_travel(description):
@@ -165,16 +171,16 @@ def sync_to_db(jobs: list[dict]) -> tuple[int, int, int]:
             skipped += 1
             continue
 
-        company_id = upsert_company(con, company_map, company)
+        company_id = upsert_company(cur, company_map, company)
         key = f"{company_id}::{title.lower()}"
         existing = posting_map.get(key)
 
         if not existing:
             pid = random_id()
-            con.execute(
+            cur.execute(
                 "INSERT INTO job_postings (id, company_id, title, link, source, scraped_date, status, description)"
-                " VALUES (?, ?, ?, ?, ?, ?, 'new', ?)",
-                (pid, company_id, title, url or None, source, TODAY, description or None),
+                " VALUES (%s, %s, %s, %s, %s, %s, 'new', %s)",
+                (pid, company_id, title, url or None, source, TODAY, description[:1500] if description else None),
             )
             posting_map[key] = {'id': pid, 'link': url, 'status': 'new'}
             print(f'  ✓ NEW  {company} — {title}')
@@ -182,38 +188,33 @@ def sync_to_db(jobs: list[dict]) -> tuple[int, int, int]:
         elif existing['status'] != 'new':
             skipped += 1
         elif url and existing['link'] != url:
-            con.execute(
-                'UPDATE job_postings SET link = COALESCE(?, link), description = COALESCE(?, description) WHERE id = ?',
-                (url or None, description or None, existing['id']),
+            cur.execute(
+                'UPDATE job_postings SET link = COALESCE(%s, link), description = COALESCE(%s, description) WHERE id = %s',
+                (url or None, description[:1500] if description else None, existing['id']),
             )
             print(f'  ↑ UPD  {company} — {title}')
             updated += 1
         else:
             skipped += 1
 
-    con.commit()
-    con.close()
+    conn.commit()
+    cur.close()
+    conn.close()
     return created, updated, skipped
 
 
 # ── Search config ─────────────────────────────────────────────────────────────
 
-# (search_term, sites, location)
 SEARCHES = [
-    # broad US — customer-facing / GTM roles
     ('forward deployed engineer',       ['linkedin', 'indeed'], 'United States'),
     ('solutions engineer AI',           ['linkedin'],           'United States'),
     ('GTM engineer',                    ['linkedin'],           'United States'),
     ('sales engineer AI',               ['linkedin'],           'United States'),
     ('automation engineer AI',          ['linkedin', 'indeed'], 'United States'),
     ('technical account manager AI',    ['linkedin'],           'United States'),
-    # San Diego specific — cast wider net for AI engineering
-    ('AI',                              ['linkedin', 'indeed'], 'San Diego, CA'),
     ('AI engineer',                     ['linkedin', 'indeed'], 'San Diego, CA'),
-    ('software engineer AI',            ['linkedin', 'indeed'], 'San Diego, CA'),
-    ('machine learning engineer',       ['linkedin'],           'San Diego, CA'),
-    ('forward deployed engineer',       ['linkedin'],           'San Diego, CA'),
     ('solutions engineer',              ['linkedin'],           'San Diego, CA'),
+    ('forward deployed engineer',       ['linkedin'],           'San Diego, CA'),
 ]
 
 
@@ -226,14 +227,14 @@ def run():
     seen_urls: set[str] = set()
     all_jobs: list[dict] = []
 
-    for search_term, sites, location in SEARCHES:
-        is_sd = 'San Diego' in location
-        print(f'Searching {", ".join(sites)} [{location}]: "{search_term}"... (fetching descriptions, may take ~30s)')
+    for search_term, sites, search_location in SEARCHES:
+        is_sd = 'San Diego' in search_location
+        print(f'Searching {", ".join(sites)} [{search_location}]: "{search_term}"...')
         try:
             df = scrape_jobs(
                 site_name=sites,
                 search_term=search_term,
-                location=location,
+                location=search_location,
                 results_wanted=20,
                 hours_old=72,
                 country_indeed='USA',
@@ -249,11 +250,10 @@ def run():
                 title = clean(row.get('title'))
                 if not matches_role(title) and not is_sd:
                     continue
-                matches += 1
 
-                location = clean(row.get('location'))
+                row_location = clean(row.get('location'))
                 if row.get('is_remote'):
-                    location = f'Remote, {location}' if location else 'Remote'
+                    row_location = f'Remote, {row_location}' if row_location else 'Remote'
 
                 site = clean(row.get('site'))
                 source = {'linkedin': 'LinkedIn', 'indeed': 'Indeed'}.get(site, site.capitalize())
@@ -261,18 +261,26 @@ def run():
                 all_jobs.append({
                     'title': title,
                     'company': clean(row.get('company')),
-                    'location': location,
+                    'location': row_location,
                     'description': clean(row.get('description')),
                     'url': url,
                     'source': source,
                 })
+                matches += 1
             print(f'  {matches} role matches ({len(df)} total fetched)')
         except Exception as e:
             print(f'  Error: {e}')
 
     print(f'\nTotal unique role matches: {len(all_jobs)}')
+
+    if DRY_RUN:
+        for job in all_jobs:
+            print(f"  {job['company']} — {job['title']} ({job['location']})")
+            print(f"    {job['url']}")
+        return
+
     created, updated, skipped = sync_to_db(all_jobs)
-    print(f'\nDone. +{created} new | ~{updated} updated | {skipped} skipped')
+    print(f'Done. +{created} new | ~{updated} updated | {skipped} skipped')
 
 
 if __name__ == '__main__':

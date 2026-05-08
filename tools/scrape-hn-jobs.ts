@@ -82,7 +82,7 @@ function parseHNComment(hit: AlgoliaHit): ScrapedJob | null {
   const careersUrl = urlMatches.find(u => /jobs|careers|apply|hire|work|join|ashby|greenhouse|lever|workable/i.test(u));
   const jobLink = careersUrl ?? urlMatches[0] ?? `https://news.ycombinator.com/item?id=${hit.objectID}`;
 
-  return { companyName: companyName.trim(), jobTitle: role.trim(), location, description, jobLink, isYC: false };
+  return { companyName: companyName.trim(), jobTitle: role.trim(), location, description, jobLink, isYC: false, source: 'HN' };
 }
 
 async function getLatestHiringThreadId(): Promise<number> {

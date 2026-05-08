@@ -12,3 +12,8 @@ pool.query(`
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )
 `).catch(console.error)
+
+// Drop overly-restrictive source check so new scrapers (LinkedIn, Indeed, etc.) work
+pool.query(`
+  ALTER TABLE job_postings DROP CONSTRAINT IF EXISTS job_postings_source_check
+`).catch(console.error)

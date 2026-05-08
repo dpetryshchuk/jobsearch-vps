@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Job search pipeline — scrapers, SQLite, and Claude skills",
   "scripts": {
-    "scrape": "tsx tools/scrape-yc-deep.ts && tsx tools/scrape-hn-jobs.ts && tsx tools/scrape-remoteok.ts && tsx tools/scrape-simplifyjobs.ts",
+    "scrape": "tsx tools/scrape-yc-deep.ts && tsx tools/scrape-hn-jobs.ts && python tools/scrape-jobspy.py",
     "scrape:yc-deep": "tsx tools/scrape-yc-deep.ts",
     "scrape:hn": "tsx tools/scrape-hn-jobs.ts",
     "scrape:remoteok": "tsx tools/scrape-remoteok.ts",
