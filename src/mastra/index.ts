@@ -35,6 +35,26 @@ export const mastra = new Mastra({
   server: {
     apiRoutes: [
       {
+        path: '/data/usage',
+        method: 'GET' as const,
+        handler: async (c: any) => {
+          const base = process.env.LANGFUSE_HOST ?? 'https://cloud.langfuse.com'
+          const auth = Buffer.from(`${process.env.LANGFUSE_PUBLIC_KEY}:${process.env.LANGFUSE_SECRET_KEY}`).toString('base64')
+
+          const [tracesRes, dailyRes] = await Promise.all([
+            fetch(`${base}/api/public/traces?limit=50&orderBy=timestamp&order=DESC`, {
+              headers: { Authorization: `Basic ${auth}` },
+            }),
+            fetch(`${base}/api/public/metrics/daily?limit=30`, {
+              headers: { Authorization: `Basic ${auth}` },
+            }),
+          ])
+
+          const [traces, daily] = await Promise.all([tracesRes.json(), dailyRes.json()])
+          return c.json({ traces: traces.data ?? [], daily: daily.data ?? [] })
+        },
+      },
+      {
         path: '/data/pipeline',
         method: 'GET' as const,
         handler: async (c: any) => {

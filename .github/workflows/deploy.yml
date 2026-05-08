@@ -18,5 +18,6 @@ jobs:
             cd ~/jobsearch
             git pull
             npm install
+            cd frontend && npm install && npm run build && cd ..
             npx mastra build
             sudo systemctl restart jobsearch
