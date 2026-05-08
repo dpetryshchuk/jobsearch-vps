@@ -153,7 +153,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { created, updated, skipped } = syncJobsToDB(allJobs);
+  const { created, updated, skipped } = await syncJobsToDB(allJobs);
   console.log(`\nDone. +${created} new | ~${updated} updated | ${skipped} skipped`);
 }
 

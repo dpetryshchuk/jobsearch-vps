@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { created, updated, skipped } = syncJobsToDB(jobs);
+  const { created, updated, skipped } = await syncJobsToDB(jobs);
   console.log(`Done. +${created} new | ~${updated} updated | ${skipped} skipped`);
 }
 

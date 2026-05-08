@@ -1,9 +1,6 @@
-import { DatabaseSync } from 'node:sqlite';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATH = path.join(__dirname, '../db/jobsearch.sqlite');
+import 'dotenv/config';
+import { randomBytes } from 'crypto';
+import { pool } from '../src/mastra/pool';
 
 export interface ScrapedJob {
   companyName: string;
@@ -71,8 +68,8 @@ export function isNonCARemote(location: string | null | undefined): boolean {
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
 
-function getDb(): DatabaseSync {
-  return new DatabaseSync(DB_PATH);
+function newId(): string {
+  return randomBytes(8).toString('hex');
 }
 
 interface ExistingData {
@@ -80,19 +77,17 @@ interface ExistingData {
   postingMap: Map<string, { id: string; link: string | null; status: string }>;
 }
 
-function getExistingData(): ExistingData {
-  const db = getDb();
-  const companies = db.prepare('SELECT id, name FROM companies').all() as { id: string; name: string }[];
-  const postings = db.prepare('SELECT id, company_id, title, link, status FROM job_postings').all() as {
-    id: string; company_id: string; title: string; link: string | null; status: string;
-  }[];
-  db.close();
+async function getExistingData(): Promise<ExistingData> {
+  const [companies, postings] = await Promise.all([
+    pool.query('SELECT id, name FROM companies'),
+    pool.query('SELECT id, company_id, title, link, status FROM job_postings'),
+  ]);
 
   const companyMap = new Map<string, string>();
-  for (const c of companies) companyMap.set(c.name.toLowerCase(), c.id);
+  for (const c of companies.rows) companyMap.set(c.name.toLowerCase(), c.id);
 
   const postingMap = new Map<string, { id: string; link: string | null; status: string }>();
-  for (const p of postings) {
+  for (const p of postings.rows) {
     const key = `${p.company_id}::${(p.title || '').toLowerCase()}`;
     postingMap.set(key, { id: p.id, link: p.link, status: p.status });
   }
@@ -100,40 +95,39 @@ function getExistingData(): ExistingData {
   return { companyMap, postingMap };
 }
 
-function randomId(db: DatabaseSync): string {
-  const row = db.prepare("SELECT lower(hex(randomblob(8))) as id").get() as { id: string };
-  return row.id;
-}
-
-function upsertCompany(db: DatabaseSync, name: string, website?: string): string {
-  const existing = db.prepare('SELECT id FROM companies WHERE lower(name) = lower(?)').get(name) as { id: string } | undefined;
-  if (existing) return existing.id;
-  const id = randomId(db);
-  db.prepare('INSERT INTO companies (id, name, website) VALUES (?, ?, ?)').run(id, name, website ?? null);
+async function upsertCompany(name: string, website?: string): Promise<string> {
+  const existing = await pool.query(
+    'SELECT id FROM companies WHERE lower(name) = lower($1)',
+    [name]
+  );
+  if (existing.rows.length > 0) return existing.rows[0].id;
+  const id = newId();
+  await pool.query(
+    'INSERT INTO companies (id, name, website) VALUES ($1, $2, $3)',
+    [id, name, website ?? null]
+  );
   return id;
 }
 
-function insertPosting(db: DatabaseSync, companyId: string, job: ScrapedJob, source: string): void {
-  const id = randomId(db);
+async function insertPosting(companyId: string, job: ScrapedJob, source: string): Promise<void> {
   const today = new Date().toISOString().slice(0, 10);
-  db.prepare(`
+  await pool.query(`
     INSERT INTO job_postings (id, company_id, title, link, source, scraped_date, status, description)
-    VALUES (?, ?, ?, ?, ?, ?, 'new', ?)
-  `).run(id, companyId, job.jobTitle, job.jobLink ?? null, source, today, job.description ?? null);
+    VALUES ($1, $2, $3, $4, $5, $6, 'new', $7)
+  `, [newId(), companyId, job.jobTitle, job.jobLink ?? null, source, today, job.description ?? null]);
 }
 
-function updatePosting(db: DatabaseSync, postingId: string, job: ScrapedJob): void {
-  db.prepare(
-    'UPDATE job_postings SET link = COALESCE(?, link), description = COALESCE(?, description) WHERE id = ?'
-  ).run(job.jobLink ?? null, job.description ?? null, postingId);
+async function updatePosting(postingId: string, job: ScrapedJob): Promise<void> {
+  await pool.query(
+    'UPDATE job_postings SET link = COALESCE($1, link), description = COALESCE($2, description) WHERE id = $3',
+    [job.jobLink ?? null, job.description ?? null, postingId]
+  );
 }
 
 // ── Main sync ─────────────────────────────────────────────────────────────────
 
-export function syncJobsToDB(jobs: ScrapedJob[]): SyncResult {
-  const { companyMap, postingMap } = getExistingData();
-  const db = getDb();
-
+export async function syncJobsToDB(jobs: ScrapedJob[]): Promise<SyncResult> {
+  const { companyMap, postingMap } = await getExistingData();
   let created = 0, updated = 0, skipped = 0;
 
   for (const job of jobs) {
@@ -152,7 +146,7 @@ export function syncJobsToDB(jobs: ScrapedJob[]): SyncResult {
 
     let companyId = companyMap.get(job.companyName.toLowerCase());
     if (!companyId) {
-      companyId = upsertCompany(db, job.companyName, job.website);
+      companyId = await upsertCompany(job.companyName, job.website);
       companyMap.set(job.companyName.toLowerCase(), companyId);
     }
 
@@ -160,14 +154,14 @@ export function syncJobsToDB(jobs: ScrapedJob[]): SyncResult {
     const existing = postingMap.get(postingKey);
 
     if (!existing) {
-      insertPosting(db, companyId, job, source);
+      await insertPosting(companyId, job, source);
       postingMap.set(postingKey, { id: '', link: job.jobLink ?? null, status: 'new' });
       console.log(`  ✓ NEW  ${job.companyName} — ${job.jobTitle}`);
       created++;
     } else if (existing.status !== 'new') {
       skipped++;
     } else if (job.jobLink && existing.link !== job.jobLink) {
-      updatePosting(db, existing.id, job);
+      await updatePosting(existing.id, job);
       console.log(`  ↑ UPD  ${job.companyName} — ${job.jobTitle}`);
       updated++;
     } else {
@@ -175,6 +169,5 @@ export function syncJobsToDB(jobs: ScrapedJob[]): SyncResult {
     }
   }
 
-  db.close();
   return { created, updated, skipped };
 }
