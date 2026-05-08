@@ -3,14 +3,13 @@
   "version": "1.0.0",
   "description": "Job search pipeline — scrapers, SQLite, and Claude skills",
   "scripts": {
-    "scrape": "tsx tools/scrape-yc-jobs.ts && tsx tools/scrape-yc-deep.ts && tsx tools/scrape-hn-jobs.ts && tsx tools/scrape-remoteok.ts && tsx tools/scrape-simplifyjobs.ts && python tools/scrape-jobspy.py",
-    "scrape:yc": "tsx tools/scrape-yc-jobs.ts",
+    "scrape": "tsx tools/scrape-yc-deep.ts && tsx tools/scrape-hn-jobs.ts && tsx tools/scrape-remoteok.ts && tsx tools/scrape-simplifyjobs.ts",
     "scrape:yc-deep": "tsx tools/scrape-yc-deep.ts",
     "scrape:hn": "tsx tools/scrape-hn-jobs.ts",
     "scrape:remoteok": "tsx tools/scrape-remoteok.ts",
     "scrape:simplify": "tsx tools/scrape-simplifyjobs.ts",
     "scrape:jobspy": "python tools/scrape-jobspy.py",
-    "scrape:dry": "tsx tools/scrape-yc-jobs.ts --dry && tsx tools/scrape-hn-jobs.ts --dry && tsx tools/scrape-remoteok.ts --dry && tsx tools/scrape-simplifyjobs.ts --dry",
+    "scrape:dry": "tsx tools/scrape-yc-deep.ts --dry && tsx tools/scrape-hn-jobs.ts --dry && tsx tools/scrape-remoteok.ts --dry && tsx tools/scrape-simplifyjobs.ts --dry",
     "dev": "mastra dev",
     "db:query": "tsx tools/query.ts",
     "db:backup": "node -e \"const fs=require('fs');const d=new Date().toISOString().slice(0,10);fs.mkdirSync('db/backups',{recursive:true});fs.copyFileSync('db/jobsearch.sqlite','db/backups/'+d+'.sqlite');console.log('Backed up to db/backups/'+d+'.sqlite')\""
