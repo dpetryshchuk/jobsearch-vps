@@ -246,10 +246,22 @@ export default function Chat() {
   return (
     <div className="flex flex-col h-screen">
       <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col gap-4">
-        <div className="max-w-[680px] mx-auto w-full flex flex-col gap-4">
-          {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
-          <div ref={messagesEndRef} />
-        </div>
+        {messages.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh] gap-3 text-center px-4">
+            <div className="w-10 h-10 rounded-full bg-foreground/10 flex items-center justify-center">
+              <div className="w-3 h-3 rounded-full bg-foreground/60" />
+            </div>
+            <div>
+              <p className="text-xl font-semibold tracking-tight">What's happening today?</p>
+              <p className="text-sm text-muted-foreground mt-1">Paste a job post, log outreach, or ask anything about your pipeline.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-[680px] mx-auto w-full flex flex-col gap-4">
+            {messages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
       <div className="border-t border-border bg-background px-4 py-3 shrink-0">
@@ -260,9 +272,7 @@ export default function Chat() {
               value={input}
               onChange={e => { setInput(e.target.value); adjustHeight() }}
               onKeyDown={handleKeyDown}
-              placeholder={mode === 'input'
-                ? 'Paste anything — job post, LinkedIn profile, message you sent...'
-                : 'Search your notes — burnout, cold outreach, system design...'}
+              placeholder="Message Jobby..."
               rows={1}
               className="flex-1 resize-none rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm leading-relaxed placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 transition-all min-h-[48px] max-h-[200px]"
             />
