@@ -165,11 +165,10 @@ export default function Chat() {
 
       let textContent = ''
       let buffer = ''
+      let textStarted = false
       const toolCallMap: Record<string, ToolCallData> = {}
       const reader = res.body!.getReader()
       const decoder = new TextDecoder()
-
-      updateMessage(agentId, m => ({ ...m, text: '', thinking: false }))
 
       while (true) {
         const { done, value } = await reader.read()
@@ -193,7 +192,12 @@ export default function Chat() {
 
           if (chunk.type === 'text-delta' && chunk.payload?.text) {
             textContent += chunk.payload.text
-            updateMessage(agentId, m => ({ ...m, text: textContent }))
+            if (!textStarted) {
+              textStarted = true
+              updateMessage(agentId, m => ({ ...m, text: textContent, thinking: false }))
+            } else {
+              updateMessage(agentId, m => ({ ...m, text: textContent }))
+            }
           } else if (chunk.type === 'tool-call' && chunk.payload) {
             const { toolCallId, toolName, args } = chunk.payload
             toolCallMap[toolCallId] = { toolCallId, toolName, args, result: undefined }
@@ -207,6 +211,7 @@ export default function Chat() {
           }
         }
       }
+      updateMessage(agentId, m => m.thinking ? { ...m, text: textContent, thinking: false } : m)
     } catch (err) {
       clearInterval(thinkingInterval)
       const msg = err instanceof Error ? err.message : 'Unknown error'

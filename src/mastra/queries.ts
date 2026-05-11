@@ -44,10 +44,18 @@ export interface RetroResult {
     dead_total: string
     first_interaction: string | null
   }
+  recentActivity: {
+    date: string
+    direction: string
+    notes: string
+    contact: string
+    company: string | null
+    stage: string
+  }[]
 }
 
 export async function getRetro(): Promise<RetroResult> {
-  const [weekly, daily, bySource, stats, needsAction, alltime] = await Promise.all([
+  const [weekly, daily, bySource, stats, needsAction, alltime, recentActivity] = await Promise.all([
     pool.query(`
       SELECT to_char(date_trunc('week', date::timestamp), 'YYYY-MM-DD') as week,
              direction, COUNT(*) as n
@@ -89,6 +97,15 @@ export async function getRetro(): Promise<RetroResult> {
       LIMIT 10
     `),
     pool.query(`
+      SELECT i.date::text, i.direction, i.notes, c.name as contact,
+             co.name as company, c.stage
+      FROM interactions i
+      JOIN contacts c ON i.contact_id = c.id
+      LEFT JOIN companies co ON c.company_id = co.id
+      WHERE i.date >= CURRENT_DATE - 6
+      ORDER BY i.date DESC, i.id DESC
+    `),
+    pool.query(`
       SELECT
         (SELECT COUNT(*) FROM interactions WHERE direction = 'out') as sent_total,
         (SELECT COUNT(*) FROM interactions WHERE direction = 'in') as received_total,
@@ -104,6 +121,7 @@ export async function getRetro(): Promise<RetroResult> {
     stats: stats.rows[0],
     needsAction: needsAction.rows,
     alltime: alltime.rows[0],
+    recentActivity: recentActivity.rows,
   }
 }
 

@@ -20,6 +20,14 @@ interface RetroData {
     first_interaction: string | null
   }
   weekly: { week: string; direction: string; n: string }[]
+  recentActivity: {
+    date: string
+    direction: string
+    notes: string
+    contact: string
+    company: string | null
+    stage: string
+  }[]
 }
 
 const DAY_NAMES = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -156,42 +164,42 @@ export default function Retro() {
           <StatCard label="Active" value={data.stats.active} sub={`of ${data.stats.total_contacts} contacts`} />
         </div>
 
-        {Object.keys(sourceMap).length > 0 && (
+        {data.recentActivity.length > 0 ? (
           <>
             <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-3 pb-2 border-b border-border">
-              Funnel by source
+              Activity this week
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-              {Object.entries(sourceMap).map(([source, stages]) => {
-                const outreached = stages['Outreached'] ?? 0
-                const responded = stages['Responded'] ?? 0
-                const ongoing = stages['Ongoing'] ?? 0
-                const rows: { label: string; count: number; width: number }[] = [
-                  { label: 'Outreached', count: outreached, width: 100 },
-                  { label: 'Responded', count: responded, width: pct(responded, outreached) },
-                  { label: 'Ongoing', count: ongoing, width: pct(ongoing, outreached) },
-                ]
-                return (
-                  <div key={source} className="border border-border rounded-lg p-4">
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-4">{source}</p>
-                    <div className="flex flex-col gap-3">
-                      {rows.map(row => (
-                        <div key={row.label} className="flex flex-col gap-1.5 min-w-0">
-                          <div className="flex justify-between items-baseline text-xs">
-                            <span className="text-muted-foreground">{row.label}</span>
-                            <span className="font-semibold tabular-nums">{row.count}</span>
-                          </div>
-                          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-foreground/60" style={{ width: `${Math.min(row.width, 100)}%` }} />
-                          </div>
-                        </div>
-                      ))}
+            <div className="flex flex-col gap-2 mb-6">
+              {data.recentActivity.map((item, i) => (
+                <div key={i} className="flex items-start gap-3 border border-border rounded-lg px-4 py-3">
+                  <span className={cn(
+                    'mt-0.5 text-[10px] font-mono uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0',
+                    item.direction === 'out'
+                      ? 'bg-foreground/10 text-foreground'
+                      : 'bg-muted text-muted-foreground'
+                  )}>
+                    {item.direction === 'out' ? 'sent' : 'rcvd'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{item.contact}</span>
+                      {item.company && (
+                        <span className="text-xs text-muted-foreground">{item.company}</span>
+                      )}
                     </div>
+                    {item.notes && (
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.notes}</p>
+                    )}
                   </div>
-                )
-              })}
+                  <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0 mt-0.5">
+                    {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+              ))}
             </div>
           </>
+        ) : (
+          <p className="text-sm text-muted-foreground mb-6">No activity in the last 7 days.</p>
         )}
 
       </section>
